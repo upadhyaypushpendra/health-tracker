@@ -148,11 +148,22 @@ export default function Settings() {
           <section>
             <SectionHeader icon={<Bell size={12} />} label="Notifications" />
             <Card border>
-              <Toggle
-                checked={settings?.notificationsEnabled ?? false}
-                onChange={handleNotificationToggle}
-                label={isGranted ? 'Workout & water reminders' : 'Enable notifications (requires permission)'}
-              />
+              <div className="space-y-3">
+                <Toggle
+                  checked={settings?.notificationsEnabled ?? false}
+                  onChange={handleNotificationToggle}
+                  label={isGranted ? 'Enable reminders' : 'Enable notifications (requires permission)'}
+                />
+                {settings?.notificationsEnabled && isGranted && (
+                  <Toggle
+                    checked={settings?.waterReminderInterval !== null}
+                    onChange={(enabled) =>
+                      updateSettings({ waterReminderInterval: enabled ? 60 : null })
+                    }
+                    label="Drink water reminder (every hour)"
+                  />
+                )}
+              </div>
             </Card>
           </section>
         )}
