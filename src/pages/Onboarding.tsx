@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Droplets, Utensils } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Droplets, Utensils } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
@@ -190,11 +190,12 @@ export default function Onboarding() {
         >
           {isLast ? 'Start Tracking' : step === 0 ? 'Get Started' : 'Continue'}
         </Button>
-        {step > 0 && !isLast && (
+        {step > 0 && (
           <button
-            className="w-full text-center text-sm text-[#555555] mt-3 py-2"
+            className="w-full flex items-center justify-center gap-1 text-sm text-[#555555] mt-3 py-2 hover:text-[#A0A0A0] transition-colors"
             onClick={() => setStep((s) => s - 1)}
           >
+            <ChevronLeft size={16} />
             Back
           </button>
         )}
