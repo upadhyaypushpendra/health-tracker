@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Health Tracker',
-        short_name: 'FitTrack',
+        name: 'Body Sync',
+        short_name: 'Body Sync',
         description: 'Track workouts, nutrition, and body metrics',
         theme_color: '#0D0D0D',
         background_color: '#0D0D0D',

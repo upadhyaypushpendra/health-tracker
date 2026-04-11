@@ -1,7 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { Plan, WorkoutLog, WaterLog, MealLog, BodyMetric, Exercise, UserSettings } from './types'
 
-class HealthTrackerDB extends Dexie {
+class BodySyncDB extends Dexie {
   plans!: Table<Plan, string>
   workoutLogs!: Table<WorkoutLog, string>
   waterLogs!: Table<WaterLog, string>
@@ -11,7 +11,7 @@ class HealthTrackerDB extends Dexie {
   settings!: Table<UserSettings, string>
 
   constructor() {
-    super('HealthTrackerDB')
+    super('BodySyncDB')
 
     this.version(1).stores({
       plans: 'id, name, isActive, createdAt',
@@ -25,7 +25,7 @@ class HealthTrackerDB extends Dexie {
   }
 }
 
-export const db = new HealthTrackerDB()
+export const db = new BodySyncDB()
 
 // ─── Settings helpers ────────────────────────────────────────────────────────
 

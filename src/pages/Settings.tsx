@@ -192,7 +192,7 @@ export default function Settings() {
           </div>
         </section>
 
-        <p className="text-center text-xs text-[#333333] pb-4">FitTrack · All data stored locally on your device</p>
+        <p className="text-center text-xs text-[#333333] pb-4">Body Sync · All data stored locally on your device</p>
       </div>
     </div>
   )

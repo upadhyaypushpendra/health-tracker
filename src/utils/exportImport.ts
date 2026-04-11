@@ -41,7 +41,7 @@ export async function exportData(): Promise<void> {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `health-tracker-backup-${new Date().toISOString().split('T')[0]}.json`
+  a.download = `bodysync-backup-${new Date().toISOString().split('T')[0]}.json`
   a.click()
   URL.revokeObjectURL(url)
 }

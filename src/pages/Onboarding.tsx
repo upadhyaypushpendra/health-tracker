@@ -1,12 +1,12 @@
+import { Check, ChevronRight, Droplets, Utensils } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, Droplets, Utensils, ChevronRight, Check } from 'lucide-react'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { updateSettings } from '../db'
 
 const STEPS = [
-  { id: 'welcome', title: 'Welcome to\nFitTrack', subtitle: 'Your personal fitness companion' },
+  { id: 'welcome', title: 'Welcome to\nBody Sync', subtitle: 'Your personal fitness companion' },
   { id: 'profile', title: 'About You', subtitle: "Let's personalize your experience" },
   { id: 'goals', title: 'Your Goals', subtitle: 'Set daily targets' },
   { id: 'done', title: "You're all set!", subtitle: 'Start tracking your progress' },
@@ -63,7 +63,7 @@ export default function Onboarding() {
         {step === 0 && (
           <div className="space-y-6">
             <div className="w-20 h-20 bg-[#00FF87]/10 rounded-3xl flex items-center justify-center mb-8">
-              <Activity size={40} className="text-[#00FF87]" />
+              <img src="/icon-512.png" alt="Body Sync" className="w-20 h-20" />
             </div>
             <div>
               <h1 className="text-4xl font-black text-white whitespace-pre-line leading-tight mb-3">
@@ -96,6 +96,7 @@ export default function Onboarding() {
             </div>
             <div className="space-y-4">
               <Input
+                name="name"
                 label="Your Name"
                 placeholder="Enter your name"
                 value={name}
@@ -103,6 +104,7 @@ export default function Onboarding() {
                 autoFocus
               />
               <Input
+                name="height"
                 label="Height"
                 type="number"
                 placeholder="175"
@@ -111,6 +113,7 @@ export default function Onboarding() {
                 onChange={(e) => setHeight(e.target.value)}
               />
               <Input
+                name="goalWeight"
                 label="Goal Weight"
                 type="number"
                 placeholder="75"
@@ -131,6 +134,7 @@ export default function Onboarding() {
             </div>
             <div className="space-y-4">
               <Input
+                name="water-goal"
                 label="Daily Water Goal"
                 type="number"
                 placeholder="3000"
@@ -140,6 +144,7 @@ export default function Onboarding() {
                 hint="Recommended: 2000–4000ml"
               />
               <Input
+                name="calorie-goal"
                 label="Daily Calorie Goal"
                 type="number"
                 placeholder="2000"
