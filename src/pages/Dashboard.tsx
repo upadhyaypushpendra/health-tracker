@@ -22,7 +22,7 @@ export default function Dashboard() {
   const settings = useLiveQuery(() => getSettings())
 
   const waterTotal = totalWater(todayWater?.entries ?? [])
-  const waterGoal = todayWater?.goal ?? settings?.waterGoal ?? 3000
+  const waterGoal = settings?.waterGoal ?? todayWater?.goal ?? 3000
   const waterPct = pct(waterTotal, waterGoal)
 
   const calorieTotal = totalCalories(todayMeals)

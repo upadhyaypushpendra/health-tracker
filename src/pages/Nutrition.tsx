@@ -78,7 +78,7 @@ export default function Nutrition() {
   const [manualForm, setManualForm] = useState<MealFormState>(EMPTY_FORM)
 
   // ── Computed ──────────────────────────────────────────────────────────
-  const waterGoal = waterLog?.goal ?? settings?.waterGoal ?? 3000
+  const waterGoal = settings?.waterGoal ?? waterLog?.goal ?? 3000
   const waterTotal = totalWater(waterLog?.entries ?? [])
   const waterPct = pct(waterTotal, waterGoal)
 

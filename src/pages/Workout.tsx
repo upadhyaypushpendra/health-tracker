@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react'
@@ -23,6 +23,82 @@ export default function Workout() {
   const todayDOW = getDayOfWeek()
   const todayPlan = activePlan?.weekTemplate.find((d) => d.dayOfWeek === todayDOW)
   const isRestDay = todayPlan?.isRest ?? false
+
+  // Always keep a ref to the latest workout so the sync effect can read it
+  // without needing todayWorkout in its deps (which would cause a feedback loop:
+  // sync writes DB → liveQuery fires → todayWorkout changes → effect re-runs).
+  const todayWorkoutRef = useRef<WorkoutLog | undefined>(undefined)
+  todayWorkoutRef.current = todayWorkout
+
+  // Sync plan edits into an in-progress workout log.
+  // Fires only when the plan changes — not on every workout DB write.
+  const lastPlanUpdatedAt = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const workout = todayWorkoutRef.current
+    if (!workout || !activePlan || !todayPlan || isRestDay) return
+    if (lastPlanUpdatedAt.current === activePlan.updatedAt) return
+    lastPlanUpdatedAt.current = activePlan.updatedAt
+
+    const updatedExercises: ExerciseLog[] = []
+
+    for (const planned of todayPlan.exercises) {
+      const existing = workout.exercises.find((e) => e.exerciseId === planned.exerciseId)
+
+      if (existing) {
+        // Update target values on uncompleted sets; leave completed sets untouched
+        const syncedSets: SetLog[] = existing.sets.map((s) =>
+          s.completed
+            ? s
+            : { ...s, targetReps: planned.reps, targetWeight: planned.weight }
+        )
+        // If the plan added more sets, append them
+        for (let i = existing.sets.length; i < planned.sets; i++) {
+          syncedSets.push({
+            setNumber: i + 1,
+            targetReps: planned.reps,
+            actualReps: null,
+            targetWeight: planned.weight,
+            actualWeight: planned.weight,
+            completed: false,
+          })
+        }
+        // If the plan reduced sets, drop uncompleted trailing sets only
+        const trimmed = syncedSets.filter((s, i) => i < planned.sets || s.completed)
+        updatedExercises.push({ ...existing, name: planned.name, sets: trimmed })
+      } else {
+        // New exercise added to the plan — append with fresh sets
+        updatedExercises.push({
+          exerciseId: planned.exerciseId,
+          name: planned.name,
+          completed: false,
+          sets: Array.from({ length: planned.sets }, (_, i) => ({
+            setNumber: i + 1,
+            targetReps: planned.reps,
+            actualReps: null,
+            targetWeight: planned.weight,
+            actualWeight: planned.weight,
+            completed: false,
+          })),
+        })
+      }
+    }
+
+    // Keep exercises removed from the plan only if they have completed sets
+    for (const ex of workout.exercises) {
+      const stillInPlan = todayPlan.exercises.some((p) => p.exerciseId === ex.exerciseId)
+      if (!stillInPlan && ex.sets.some((s) => s.completed)) {
+        updatedExercises.push(ex)
+      }
+    }
+
+    const allDone = updatedExercises.every((e) => e.completed)
+    db.workoutLogs.put({
+      ...workout,
+      exercises: updatedExercises,
+      completed: allDone,
+      ...(allDone && !workout.completedAt ? { completedAt: new Date().toISOString() } : {}),
+    })
+  }, [activePlan, todayPlan, isRestDay])
 
   const initTodayWorkout = async () => {
     if (!activePlan || !todayPlan || isRestDay) return

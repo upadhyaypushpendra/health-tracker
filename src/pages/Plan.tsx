@@ -5,19 +5,22 @@ import PageHeader from '../components/layout/PageHeader'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
-import { db } from '../db'
-import { updateSettings } from '../db'
+import { db, getSettings, updateSettings } from '../db'
 import { exportPlan, importPlan } from '../utils/exportImport'
 
 export default function Plan() {
   const navigate = useNavigate()
   const plans = useLiveQuery(() => db.plans.toArray(), [])
-  const settings = useLiveQuery(() => db.settings.get('user'))
+  const settings = useLiveQuery(() => getSettings())
 
   const activePlanId = settings?.activePlanId
 
   const handleActivate = async (id: string) => {
-    await updateSettings({ activePlanId: id })
+    const plan = plans?.find((p) => p.id === id)
+    await updateSettings({
+      activePlanId: id,
+      ...(plan ? { calorieGoal: plan.calorieTarget, waterGoal: plan.waterTarget } : {}),
+    })
     // Mark isActive on the plan records for easier querying
     await db.plans.toCollection().modify({ isActive: false })
     await db.plans.update(id, { isActive: true })
