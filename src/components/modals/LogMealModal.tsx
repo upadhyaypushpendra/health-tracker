@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, Plus, Search } from 'lucide-react'
+import { ChevronRight, Loader2, Plus, Search, Sparkles } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { v4 as uuid } from 'uuid'
 import Modal from '../ui/Modal'
@@ -10,6 +10,7 @@ import { FOOD_CATEGORIES, FOOD_DATABASE, calcMacros, type FoodCategory, type Foo
 import { db } from '../../db'
 import type { CustomFood, MealLog, MealType } from '../../db/types'
 import { getTodayString } from '../../utils/dateHelpers'
+import { chat } from '../../services/gemini'
 
 export const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: 'breakfast', label: '🌅 Breakfast' },
@@ -24,7 +25,7 @@ export const MEAL_EMOJIS: Record<MealType, string> = {
   breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎', pre_workout: '💪', post_workout: '🔥',
 }
 
-type LogMode = 'food' | 'manual'
+type LogMode = 'food' | 'ai' | 'manual'
 
 interface MealFormState {
   name: string
@@ -50,6 +51,11 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [quantity, setQuantity] = useState('')
   const [customServing, setCustomServing] = useState(false)
   const [manualForm, setManualForm] = useState<MealFormState>(EMPTY_FORM)
+
+  // ── AI Log state ──────────────────────────────────────────────────────────
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const filteredFoods = useMemo(() => {
     return FOOD_DATABASE.filter((f) => {
@@ -141,36 +147,82 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
     setFoodCategory('all')
     setManualForm(EMPTY_FORM)
     setLogMode('food')
+    setAiQuery('')
+    setAiError(null)
     onClose()
+  }
+
+  const handleAILog = async () => {
+    if (!aiQuery.trim() || aiLoading) return
+    setAiLoading(true)
+    setAiError(null)
+
+    const prompt = [
+      'Estimate the nutritional information for this meal.',
+      'Return ONLY a raw JSON object — no markdown, no code blocks, no explanation.',
+      '{"name":"descriptive meal name","calories":0,"protein":0,"carbs":0,"fat":0}',
+      'All numbers are for the full meal as described (not per 100g). Protein/carbs/fat in grams.',
+      `Meal: "${aiQuery.trim()}"`,
+    ].join('\n')
+
+    try {
+      const response = await chat([{ role: 'user', content: prompt }])
+      let cleaned = response.trim()
+      const codeMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (codeMatch) cleaned = codeMatch[1].trim()
+      const start = cleaned.indexOf('{')
+      const end = cleaned.lastIndexOf('}')
+      if (start === -1 || end === -1) throw new Error('No JSON in response')
+      const data = JSON.parse(cleaned.slice(start, end + 1))
+
+      setManualForm({
+        name: String(data.name ?? aiQuery.trim()),
+        calories: String(Math.round(Number(data.calories) || 0)),
+        protein: String(Math.round((Number(data.protein) || 0) * 10) / 10),
+        carbs: String(Math.round((Number(data.carbs) || 0) * 10) / 10),
+        fat: String(Math.round((Number(data.fat) || 0) * 10) / 10),
+        mealType,
+      })
+      setLogMode('manual')
+    } catch (err) {
+      console.error('[AILog]', err)
+      setAiError("Couldn't estimate nutrition. Try being more specific or enter manually.")
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
     <Modal isOpen={isOpen} onClose={resetModal} title="Log Food" fullHeight>
       <div className="space-y-4">
         {/* Mode toggle */}
-        <div className="flex bg-[#0D0D0D] rounded-xl p-1">
-          {(['food', 'manual'] as LogMode[]).map((mode) => (
+        <div className="flex bg-[#0D0D0D] rounded-xl p-1 gap-0.5">
+          {([
+            { key: 'food', label: '🍽️ Food DB' },
+            { key: 'ai',   label: '✨ AI Log' },
+            { key: 'manual', label: '✏️ Manual' },
+          ] as { key: LogMode; label: string }[]).map(({ key, label }) => (
             <button
-              key={mode}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                logMode === mode ? 'bg-[#1A1A1A] text-white shadow' : 'text-[#555555]'
+              key={key}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                logMode === key ? 'bg-[#1A1A1A] text-white shadow' : 'text-[#555555]'
               }`}
-              onClick={() => setLogMode(mode)}
+              onClick={() => setLogMode(key)}
             >
-              {mode === 'food' ? '🍽️ Food Database' : '✏️ Manual Entry'}
+              {label}
             </button>
           ))}
         </div>
 
-        {/* Meal type (shared) */}
+        {/* Meal type (shared across all modes) */}
         <Select
           label="Meal Type"
           options={MEAL_TYPES}
-          value={logMode === 'food' ? mealType : manualForm.mealType}
+          value={logMode === 'manual' ? manualForm.mealType : mealType}
           onChange={(e) => {
             const v = e.target.value as MealType
-            if (logMode === 'food') setMealType(v)
-            else setManualForm((f) => ({ ...f, mealType: v }))
+            if (logMode === 'manual') setManualForm((f) => ({ ...f, mealType: v }))
+            else setMealType(v)
           }}
         />
 
@@ -250,9 +302,21 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
                   {filteredFoods.length === 0 && filteredCustomFoods.length === 0 && (
                     <div className="py-8 text-center">
                       <p className="text-[#555555] text-sm">No food found</p>
-                      <button className="text-xs text-[#00FF87] mt-2" onClick={() => setLogMode('manual')}>
-                        Enter manually instead →
-                      </button>
+                      <div className="flex items-center justify-center gap-3 mt-2">
+                        <button
+                          className="text-xs text-[#00FF87] font-medium"
+                          onClick={() => { setAiQuery(foodSearch); setLogMode('ai') }}
+                        >
+                          ✨ Log with AI
+                        </button>
+                        <span className="text-[#333] text-xs">or</span>
+                        <button
+                          className="text-xs text-[#555555]"
+                          onClick={() => setLogMode('manual')}
+                        >
+                          Enter manually
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -343,9 +407,68 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
           </>
         )}
 
+        {/* ── AI Log mode ── */}
+        {logMode === 'ai' && (
+          <div className="space-y-4">
+            <div className="bg-[#00FF87]/5 border border-[#00FF87]/15 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={13} className="text-[#00FF87]" />
+                <p className="text-xs font-semibold text-[#00FF87]">AI Nutrition Estimator</p>
+              </div>
+              <p className="text-xs text-white/40 leading-snug">
+                Describe what you ate in plain language. AI will estimate the nutrition and pre-fill the form for review.
+              </p>
+            </div>
+
+            <div>
+              <textarea
+                rows={3}
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAILog() } }}
+                placeholder="e.g. 2 scrambled eggs with 2 brown bread toast and butter"
+                disabled={aiLoading}
+                autoFocus
+                className="w-full bg-[#0D0D0D] border border-[#2A2A2A] rounded-xl px-3 py-2.5 text-sm text-white
+                           placeholder:text-[#444] resize-none focus:outline-none focus:border-[#00FF87]/50
+                           disabled:opacity-50 leading-relaxed"
+              />
+            </div>
+
+            {aiError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5 text-xs text-red-400">
+                {aiError}
+              </div>
+            )}
+
+            <Button
+              fullWidth
+              size="lg"
+              onClick={handleAILog}
+              disabled={!aiQuery.trim() || aiLoading}
+            >
+              {aiLoading ? (
+                <><Loader2 size={15} className="animate-spin" /> Estimating…</>
+              ) : (
+                <><Sparkles size={15} /> Estimate & Review</>
+              )}
+            </Button>
+
+            <p className="text-[10px] text-[#444] text-center leading-snug">
+              Values are AI estimates. Review and adjust before saving — logged meals are also saved to My Foods for instant reuse.
+            </p>
+          </div>
+        )}
+
         {/* ── Manual entry mode ── */}
         {logMode === 'manual' && (
           <div className="space-y-4">
+            {aiQuery && (
+              <div className="flex items-center gap-2 bg-[#00FF87]/5 border border-[#00FF87]/15 rounded-xl px-3 py-2">
+                <Sparkles size={12} className="text-[#00FF87] shrink-0" />
+                <p className="text-xs text-[#00FF87]/80">AI-estimated values — review and adjust if needed</p>
+              </div>
+            )}
             <Input
               label="Food / Meal Name"
               placeholder="e.g. Home-cooked dal, Protein shake"
