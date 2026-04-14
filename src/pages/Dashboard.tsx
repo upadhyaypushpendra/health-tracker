@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Dumbbell, Droplets, Flame, TrendingUp, ChevronRight, Plus, Activity } from 'lucide-react'
+import { Dumbbell, Droplets, Flame, ChevronRight, Plus, Activity } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import Card from '../components/ui/Card'
 import ProgressRing from '../components/ui/ProgressRing'
@@ -167,42 +167,6 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-3">Quick Actions</p>
-      <div className="space-y-2">
-        <QuickAction
-          icon={<TrendingUp size={18} className="text-[#00FF87]" />}
-          label="View Progress Charts"
-          sub="Compare plan vs actual"
-          onClick={() => navigate('/progress')}
-        />
-        <QuickAction
-          icon={<Dumbbell size={18} className="text-[#FF6B35]" />}
-          label="Browse Exercise Library"
-          sub="50+ exercises available"
-          onClick={() => navigate('/library')}
-        />
-      </div>
     </div>
-  )
-}
-
-function QuickAction({
-  icon, label, sub, onClick,
-}: { icon: React.ReactNode; label: string; sub: string; onClick: () => void }) {
-  return (
-    <Card padding="sm" hover border onClick={onClick}>
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-[#0D0D0D] rounded-xl flex items-center justify-center flex-shrink-0">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">{label}</p>
-          <p className="text-xs text-[#555555]">{sub}</p>
-        </div>
-        <ChevronRight size={16} className="text-[#555555] flex-shrink-0" />
-      </div>
-    </Card>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { isNative } from '../utils/platform'
 
@@ -46,10 +46,21 @@ function firePageNotification() {
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useNotifications() {
+  const [nativePermissionGranted, setNativePermissionGranted] = useState(false)
+
+  useEffect(() => {
+    if (!isNative) return
+    LocalNotifications.checkPermissions().then((result) => {
+      setNativePermissionGranted(result.display === 'granted')
+    })
+  }, [])
+
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (isNative) {
       const result = await LocalNotifications.requestPermissions()
-      return result.display === 'granted'
+      const granted = result.display === 'granted'
+      setNativePermissionGranted(granted)
+      return granted
     }
     if (!('Notification' in window)) return false
     if (Notification.permission === 'granted') return true
@@ -157,7 +168,9 @@ export function useNotifications() {
   }, [])
 
   const isSupported = isNative || ('Notification' in window)
-  const isGranted = isNative || ('Notification' in window && Notification.permission === 'granted')
+  const isGranted = isNative
+    ? nativePermissionGranted
+    : ('Notification' in window && Notification.permission === 'granted')
 
   return {
     requestPermission,
