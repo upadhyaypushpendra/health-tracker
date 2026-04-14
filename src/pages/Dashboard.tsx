@@ -1,20 +1,21 @@
+import { format } from 'date-fns'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Activity, ChevronRight, Droplets, Dumbbell, Flame, GlassWater, Plus, Sparkles, TrendingUp, Wand2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
-import { Dumbbell, Droplets, Flame, ChevronRight, Plus, Activity, Sparkles, Wand2, GlassWater, TrendingUp } from 'lucide-react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { v4 as uuid } from 'uuid'
+import LogMealModal from '../components/modals/LogMealModal'
+import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import LogMealModal, { MEAL_EMOJIS } from '../components/modals/LogMealModal'
-import { useActivePlan } from '../hooks/useActivePlan'
-import { useTodayWater } from '../hooks/useTodayWater'
-import { useTodayMeals } from '../hooks/useTodayMeals'
-import { useTodayWorkout } from '../hooks/useTodayWorkout'
-import { totalWater, totalCalories, pct, formatWater } from '../utils/calculations'
-import { getDayOfWeek, getTodayString } from '../utils/dateHelpers'
 import { db, getSettings } from '../db'
 import type { WaterLog } from '../db/types'
-import Button from '../components/ui/Button'
+import { useActivePlan } from '../hooks/useActivePlan'
+import { useTodayMeals } from '../hooks/useTodayMeals'
+import { useTodayWater } from '../hooks/useTodayWater'
+import { useTodayWorkout } from '../hooks/useTodayWorkout'
+import { formatWater, pct, totalCalories, totalWater } from '../utils/calculations'
+import { getDayOfWeek, getTodayString } from '../utils/dateHelpers'
+import CompactState from '../components/CompactState'
 
 const WATER_PRESETS = [
   { label: '½ glass', amount: 125 },
@@ -31,7 +32,6 @@ export default function Dashboard() {
   const todayWorkout = useTodayWorkout()
   const settings = useLiveQuery(() => getSettings())
 
-  const [customWater, setCustomWater] = useState('')
   const [showMealModal, setShowMealModal] = useState(false)
 
   // ── Computed ────────────────────────────────────────────────────────────────
@@ -124,78 +124,51 @@ export default function Dashboard() {
       {/* ── Compact Stats Grid ── */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         {/* Workout */}
-        <button
-          onClick={() => navigate('/workout')}
-          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 flex items-center gap-2.5 text-left active:scale-[0.97] transition-transform"
-        >
-          <div className="w-7 h-7 bg-[#FF6B35]/10 rounded-lg flex items-center justify-center shrink-0">
-            <Dumbbell size={13} className="text-[#FF6B35]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#666] leading-none mb-1">Workout</p>
-            <p className="text-sm font-bold text-white leading-none mb-1.5">
-              {isRestDay ? 'Rest Day' : `${completedExercises}/${plannedExercises}`}
-            </p>
-            <div className="h-0.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-              <div className="h-full bg-[#FF6B35] rounded-full transition-all" style={{ width: `${workoutPct}%` }} />
-            </div>
-          </div>
-        </button>
+        <CompactState
+          name='Workout'
+          navigateTo="/workout"
+          isRestDay={isRestDay}
+          value={`${completedExercises}/${plannedExercises}`}
+          unit=''
+          percentage={workoutPct}
+          Icon={Dumbbell}
+          iconColor="#FF6B35"
+        />
 
         {/* Water */}
-        <button
-          onClick={() => navigate('/nutrition')}
-          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 flex items-center gap-2.5 text-left active:scale-[0.97] transition-transform"
-        >
-          <div className="w-7 h-7 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
-            <Droplets size={13} className="text-blue-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#666] leading-none mb-1">Water</p>
-            <p className="text-sm font-bold text-white leading-none mb-1.5">{formatWater(waterTotal)}</p>
-            <div className="h-0.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-              <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${waterPct}%` }} />
-            </div>
-          </div>
-        </button>
+        <CompactState
+          name='Water'
+          navigateTo="/nutrition"
+          isRestDay={false}
+          value={formatWater(waterTotal)}
+          percentage={waterPct}
+          Icon={Droplets}
+          iconColor="#086DD2"
+        />
 
         {/* Calories */}
-        <button
-          onClick={() => navigate('/nutrition')}
-          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 flex items-center gap-2.5 text-left active:scale-[0.97] transition-transform"
-        >
-          <div className="w-7 h-7 bg-[#00FF87]/10 rounded-lg flex items-center justify-center shrink-0">
-            <Flame size={13} className="text-[#00FF87]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#666] leading-none mb-1">Calories</p>
-            <p className="text-sm font-bold text-white leading-none mb-1.5">
-              {calorieTotal} <span className="text-[10px] text-[#555] font-normal">kcal</span>
-            </p>
-            <div className="h-0.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-              <div className="h-full bg-[#00FF87] rounded-full transition-all" style={{ width: `${caloriePct}%` }} />
-            </div>
-          </div>
-        </button>
+        <CompactState
+          name="Calories"
+          navigateTo="/nutrition"
+          isRestDay={false}
+          value={calorieTotal}
+          unit='kcal'
+          percentage={caloriePct}
+          Icon={Flame}
+          iconColor="#00FF87"
+        />
 
         {/* Weekly Progress */}
-        <button
-          onClick={() => navigate('/progress')}
-          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 flex items-center gap-2.5 text-left active:scale-[0.97] transition-transform"
-        >
-          <div className="w-7 h-7 bg-white/5 rounded-lg flex items-center justify-center shrink-0">
-            <TrendingUp size={13} className="text-[#00FF87]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#666] leading-none mb-1">Progress</p>
-            <p className="text-sm font-bold text-white leading-none mb-1.5">
-              {workoutPct}<span className="text-[10px] text-[#555] font-normal">%</span>
-            </p>
-            <div className="h-0.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-              <div className="h-full bg-[#00FF87] rounded-full transition-all" style={{ width: `${workoutPct}%` }} />
-            </div>
-          </div>
-        </button>
+        <CompactState
+          name="Weekly Progress"
+          navigateTo="/progress"
+          isRestDay={false}
+          value={workoutPct}
+          unit={'%'}
+          percentage={workoutPct}
+          Icon={TrendingUp}
+          iconColor="#00FF87"
+        />
       </div>
 
       {/* ── Water Quick Log ── */}
@@ -217,24 +190,6 @@ export default function Dashboard() {
               +{label}
             </button>
           ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Custom ml"
-            className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#444] outline-none focus:border-blue-400"
-            value={customWater}
-            onChange={(e) => setCustomWater(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { addWater(parseInt(customWater) || 0); setCustomWater('') }
-            }}
-          />
-          <button
-            onClick={() => { addWater(parseInt(customWater) || 0); setCustomWater('') }}
-            className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
-          >
-            Add
-          </button>
         </div>
       </div>
 
