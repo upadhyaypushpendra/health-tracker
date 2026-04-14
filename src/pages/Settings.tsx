@@ -178,9 +178,9 @@ export default function Settings() {
         </section>
 
         {/* Notifications */}
-        {(isSupported || isNative) && (
-          <section>
-            <SectionHeader icon={<Bell size={12} />} label="Notifications" />
+        <section>
+          <SectionHeader icon={<Bell size={12} />} label="Notifications" />
+          {(isSupported || isNative) ? (
             <Card border>
               <div className="space-y-3">
                 <Toggle
@@ -215,8 +215,14 @@ export default function Settings() {
                 )}
               </div>
             </Card>
-          </section>
-        )}
+          ) : (
+            <Card border>
+              <p className="text-sm text-[#555555]">
+                Notifications are not supported in this browser. Install the app for full notification support.
+              </p>
+            </Card>
+          )}
+        </section>
 
         {/* Data */}
         <section>
