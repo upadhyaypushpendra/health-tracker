@@ -34,11 +34,11 @@ const EMPTY_FORM: MealFormState = {
   name: '', calories: '', protein: '', carbs: '', fat: '', mealType: 'snack',
 }
 
-export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export default function LogMealModal({ isOpen, onClose, defaultMealType }: { isOpen: boolean; onClose: () => void; defaultMealType?: MealType }) {
   const customFoods = useLiveQuery(() => db.customFoods.orderBy('createdAt').reverse().toArray(), []) ?? []
 
   const [logMode, setLogMode] = useState<LogMode>('food')
-  const [mealType, setMealType] = useState<MealType>('snack')
+  const [mealType, setMealType] = useState<MealType>(defaultMealType ?? 'snack')
   const [foodSearch, setFoodSearch] = useState('')
   const [foodCategory, setFoodCategory] = useState<FoodCategory | 'all'>('all')
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)

@@ -1,21 +1,25 @@
-import { format } from 'date-fns'
-import { Activity, ChevronRight, Droplets, Dumbbell, Flame, GlassWater, Plus, Sparkles, TrendingUp, Wand2 } from 'lucide-react'
+import { format, subDays } from 'date-fns'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Activity, CheckCircle2, ChevronRight, Droplets, Dumbbell, Flame, GlassWater, Plus, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { v4 as uuid } from 'uuid'
+import { AIQuickActions } from '../components/AIQuickActions'
+import CompactState from '../components/CompactState'
 import LogMealModal from '../components/modals/LogMealModal'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import { getSettings } from '../db'
+import { MEAL_EMOJIS } from '../data/constants'
+import { db, getSettings } from '../db'
 import { useActivePlan } from '../hooks/useActivePlan'
 import { useAddWater } from '../hooks/useAddWater'
 import { useTodayMeals } from '../hooks/useTodayMeals'
 import { useTodayWater } from '../hooks/useTodayWater'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
 import { formatWater, pct, totalCalories, totalWater } from '../utils/calculations'
-import { getDayOfWeek } from '../utils/dateHelpers'
-import CompactState from '../components/CompactState'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { hapticLight } from '../utils/haptics'
+import { getDayOfWeek, getTodayString } from '../utils/dateHelpers'
+import { hapticLight, hapticMedium } from '../utils/haptics'
+import { getCurrentMealType } from '../utils/mealHelpers'
 
 const WATER_PRESETS = [
   { label: '½ glass', amount: 125 },
@@ -33,6 +37,30 @@ export default function Dashboard() {
   const addWater = useAddWater()
 
   const [showMealModal, setShowMealModal] = useState(false)
+  const [justLogged, setJustLogged] = useState<Set<string>>(new Set())
+
+  // ── Recent foods ─────────────────────────────────────────────────────────────
+  const currentMealType = getCurrentMealType()
+  const recentFoods = useLiveQuery(async () => {
+    const cutoff = format(subDays(new Date(), 60), 'yyyy-MM-dd')
+    const logs = await db.mealLogs
+      .where('mealType').equals(currentMealType)
+      .filter((m) => m.date >= cutoff)
+      .toArray()
+    const map = new Map<string, { name: string; calories: number; protein: number; carbs: number; fat: number; count: number }>()
+    for (const l of logs) {
+      const e = map.get(l.name)
+      if (e) { e.count++ } else { map.set(l.name, { name: l.name, calories: l.calories, protein: l.protein, carbs: l.carbs, fat: l.fat, count: 1 }) }
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 3)
+  }, [currentMealType]) ?? [];
+
+  const quickLogFood = async (food: { name: string; calories: number; protein: number; carbs: number; fat: number }) => {
+    hapticMedium()
+    await db.mealLogs.put({ id: uuid(), date: getTodayString(), mealType: currentMealType, createdAt: new Date().toISOString(), ...food })
+    setJustLogged((prev) => new Set(prev).add(food.name))
+    setTimeout(() => setJustLogged((prev) => { const n = new Set(prev); n.delete(food.name); return n }), 1500)
+  }
 
   // ── Computed ────────────────────────────────────────────────────────────────
   const waterTotal = totalWater(todayWater?.entries ?? [])
@@ -178,6 +206,36 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── Recently Eaten Quick Log ── */}
+      {recentFoods.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-xs text-[#666666] uppercase tracking-wider font-semibold">
+              {MEAL_EMOJIS[currentMealType]} Quick Log
+            </p>
+            <span className="text-[10px] text-[#444444]">· tap to log instantly</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {recentFoods.map((food) => (
+              <button
+                key={food.name}
+                onClick={() => quickLogFood(food)}
+                className="flex items-center justify-between px-3 py-2.5 bg-[#1A1A1A] hover:bg-[#222222] active:scale-[0.98] rounded-xl transition-all text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{food.name}</p>
+                  <p className="text-xs text-[#555555]">{food.calories} kcal · P:{food.protein}g C:{food.carbs}g F:{food.fat}g</p>
+                </div>
+                {justLogged.has(food.name)
+                  ? <CheckCircle2 size={16} className="text-[#00FF87] shrink-0 ml-3" />
+                  : <Plus size={16} className="text-[#555555] shrink-0 ml-3" />
+                }
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Meal Log ── */}
       <div className="mb-4">
         <Button
@@ -191,35 +249,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── AI Quick Actions ── */}
-      <div className="mb-4">
-        <p className="text-xs text-[#666666] uppercase tracking-wider font-semibold mb-3">AI Assistant</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Card padding="sm" hover border className="border-green-400" onClick={() => navigate('/ai?mode=feedback')}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#00FF87]/10 rounded-xl flex items-center justify-center shrink-0">
-                <Sparkles size={18} className="text-[#00FF87]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">AI Coach</p>
-                <p className="text-xs text-[#555555]">Analyze your progress</p>
-              </div>
-            </div>
-          </Card>
-          <Card padding="md" hover border className="border-[#FF6B35]" onClick={() => navigate('/ai?mode=plan')}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
-                <Wand2 size={18} className="text-[#FF6B35]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">AI Planner</p>
-                <p className="text-xs text-[#555555]">Plan your workouts</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
+      <AIQuickActions />
 
-      <LogMealModal isOpen={showMealModal} onClose={() => setShowMealModal(false)} />
+      <LogMealModal isOpen={showMealModal} onClose={() => setShowMealModal(false)} defaultMealType={currentMealType} />
     </div>
   )
 }

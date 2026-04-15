@@ -18,6 +18,7 @@ import { useTodayMeals } from '../hooks/useTodayMeals'
 import { useTodayWater } from '../hooks/useTodayWater'
 import { formatWater, pct, totalCalories, totalMacros, totalWater } from '../utils/calculations'
 import { hapticLight } from '../utils/haptics'
+import { getCurrentMealType } from '../utils/mealHelpers'
 
 // ── Water presets ─────────────────────────────────────────────────────────────
 const WATER_PRESETS = [
@@ -64,7 +65,7 @@ export default function Nutrition() {
 
   return (
     <div className="pb-32">
-      <PageHeader title="Nutrition" subtitle="Water & Diet" back/>
+      <PageHeader title="Nutrition" subtitle="Water & Diet" back />
 
       <div className="px-4 space-y-5">
         {/* ── Water Section ───────────────────────────────────────────── */}
@@ -222,7 +223,11 @@ export default function Nutrition() {
         </section>
       </div>
 
-      <LogMealModal isOpen={showMealModal} onClose={() => setShowMealModal(false)} />
+      <LogMealModal
+        isOpen={showMealModal}
+        onClose={() => setShowMealModal(false)}
+        defaultMealType={getCurrentMealType()}
+      />
     </div>
   )
 }
