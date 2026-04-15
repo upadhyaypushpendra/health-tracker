@@ -11,22 +11,13 @@ import { db } from '../../db'
 import type { CustomFood, MealLog, MealType } from '../../db/types'
 import { getTodayString } from '../../utils/dateHelpers'
 import { chat } from '../../services/gemini'
+import { extractJson } from '../../utils/extractJson'
+import { MEAL_EMOJIS, MEAL_TYPES } from '../../data/constants'
+
+export { MEAL_EMOJIS, MEAL_TYPES }
 
 // Type inferred from the module itself — stays in sync automatically
 type FoodDbModule = typeof import('../../data/foodDatabase')
-
-export const MEAL_TYPES: { value: MealType; label: string }[] = [
-  { value: 'breakfast', label: '🌅 Breakfast' },
-  { value: 'lunch', label: '☀️ Lunch' },
-  { value: 'dinner', label: '🌙 Dinner' },
-  { value: 'snack', label: '🍎 Snack' },
-  { value: 'pre_workout', label: '💪 Pre-Workout' },
-  { value: 'post_workout', label: '🔥 Post-Workout' },
-]
-
-export const MEAL_EMOJIS: Record<MealType, string> = {
-  breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎', pre_workout: '💪', post_workout: '🔥',
-}
 
 type LogMode = 'food' | 'ai' | 'manual'
 
@@ -179,13 +170,7 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
 
     try {
       const response = await chat([{ role: 'user', content: prompt }])
-      let cleaned = response.trim()
-      const codeMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (codeMatch) cleaned = codeMatch[1].trim()
-      const start = cleaned.indexOf('{')
-      const end = cleaned.lastIndexOf('}')
-      if (start === -1 || end === -1) throw new Error('No JSON in response')
-      const data = JSON.parse(cleaned.slice(start, end + 1))
+      const data = extractJson(response) as Record<string, unknown>
 
       setManualForm({
         name: String(data.name ?? aiQuery.trim()),

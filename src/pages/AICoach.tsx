@@ -17,18 +17,7 @@ import {
   PLAN_SYSTEM_PROMPT,
 } from "../services/healthContext";
 import { useActivePlan } from "../hooks/useActivePlan";
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function extractPlanJson(text: string): unknown {
-  let cleaned = text.trim();
-  const codeMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (codeMatch) cleaned = codeMatch[1].trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON found in response");
-  return JSON.parse(cleaned.slice(start, end + 1));
-}
+import { extractJson } from "../utils/extractJson";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizePlan(raw: any): Partial<Plan> {
@@ -374,7 +363,7 @@ export default function AICoach() {
 
     try {
       const response = await chat(conversation);
-      const plan = normalizePlan(extractPlanJson(response));
+      const plan = normalizePlan(extractJson(response));
       setGeneratedPlan(plan);
       setPlanHistory([...conversation, { role: "model", content: response }]);
     } catch (err) {
@@ -420,7 +409,7 @@ export default function AICoach() {
 
     try {
       const response = await chat(updatedHistory);
-      const plan = normalizePlan(extractPlanJson(response));
+      const plan = normalizePlan(extractJson(response));
       setGeneratedPlan(plan);
       setPlanHistory([...updatedHistory, { role: "model", content: response }]);
       setModifyInput("");

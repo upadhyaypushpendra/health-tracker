@@ -1,21 +1,20 @@
 import { format } from 'date-fns'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Activity, ChevronRight, Droplets, Dumbbell, Flame, GlassWater, Plus, Sparkles, TrendingUp, Wand2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { v4 as uuid } from 'uuid'
 import LogMealModal from '../components/modals/LogMealModal'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import { db, getSettings } from '../db'
-import type { WaterLog } from '../db/types'
+import { getSettings } from '../db'
 import { useActivePlan } from '../hooks/useActivePlan'
+import { useAddWater } from '../hooks/useAddWater'
 import { useTodayMeals } from '../hooks/useTodayMeals'
 import { useTodayWater } from '../hooks/useTodayWater'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
 import { formatWater, pct, totalCalories, totalWater } from '../utils/calculations'
-import { getDayOfWeek, getTodayString } from '../utils/dateHelpers'
+import { getDayOfWeek } from '../utils/dateHelpers'
 import CompactState from '../components/CompactState'
+import { useLiveQuery } from 'dexie-react-hooks'
 
 const WATER_PRESETS = [
   { label: '½ glass', amount: 125 },
@@ -30,6 +29,7 @@ export default function Dashboard() {
   const todayMeals = useTodayMeals()
   const todayWorkout = useTodayWorkout()
   const settings = useLiveQuery(() => getSettings())
+  const addWater = useAddWater()
 
   const [showMealModal, setShowMealModal] = useState(false)
 
@@ -50,21 +50,6 @@ export default function Dashboard() {
   const workoutPct = plannedExercises > 0 ? pct(completedExercises, plannedExercises) : 0
 
   const today = new Date()
-
-  // ── Water handler ───────────────────────────────────────────────────────────
-  const addWater = async (amount: number) => {
-    if (amount <= 0) return
-    const entry = { amount, time: new Date().toISOString() }
-    if (todayWater) {
-      await db.waterLogs.update(todayWater.id, { entries: [...todayWater.entries, entry] })
-    } else {
-      const log: WaterLog = {
-        id: uuid(), date: getTodayString(),
-        entries: [entry], goal: settings?.waterGoal ?? 3000,
-      }
-      await db.waterLogs.put(log)
-    }
-  }
 
   return (
     <div className="px-4 pb-6 safe-top">

@@ -1,8 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Droplets, Flame, GlassWater, Plus, Trash2 } from 'lucide-react'
+import { Droplets, Flame, GlassWater, Plus } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
-import { v4 as uuid } from 'uuid'
-import LogMealModal, { MEAL_EMOJIS } from '../components/modals/LogMealModal'
+import LogMealModal from '../components/modals/LogMealModal'
+import { MEAL_EMOJIS } from '../data/constants'
+import SwipeToDelete from '../components/ui/SwipeToDelete'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -12,11 +13,10 @@ const MacroDonut = lazy(() =>
   import('../components/charts/MacroDonut').then(m => ({ default: m.MacroDonut }))
 )
 import { db, getSettings } from '../db'
-import type { WaterLog } from '../db/types'
+import { useAddWater } from '../hooks/useAddWater'
 import { useTodayMeals } from '../hooks/useTodayMeals'
 import { useTodayWater } from '../hooks/useTodayWater'
 import { formatWater, pct, totalCalories, totalMacros, totalWater } from '../utils/calculations'
-import { getTodayString } from '../utils/dateHelpers'
 
 // ── Water presets ─────────────────────────────────────────────────────────────
 const WATER_PRESETS = [
@@ -48,19 +48,7 @@ export default function Nutrition() {
   const macros = totalMacros(meals)
 
   // ── Handlers ──────────────────────────────────────────────────────────
-  const addWater = async (amount: number) => {
-    if (amount <= 0) return
-    const entry = { amount, time: new Date().toISOString() }
-    if (waterLog) {
-      await db.waterLogs.update(waterLog.id, { entries: [...waterLog.entries, entry] })
-    } else {
-      const log: WaterLog = {
-        id: uuid(), date: getTodayString(),
-        entries: [entry], goal: settings?.waterGoal ?? 3000,
-      }
-      await db.waterLogs.put(log)
-    }
-  }
+  const addWater = useAddWater()
 
   const removeWaterEntry = async (idx: number) => {
     if (!waterLog) return
@@ -140,18 +128,15 @@ export default function Nutrition() {
                 <p className="text-[10px] text-[#555555] uppercase tracking-wider mb-2">Today's Log</p>
                 <div className="space-y-1.5 max-h-32 overflow-y-auto">
                   {waterLog.entries.map((entry, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <SwipeToDelete key={i} onDelete={() => removeWaterEntry(i)}>
+                      <div className="flex items-center gap-2 bg-[#1A1A1A] px-2 py-1.5 rounded-xl">
                         <GlassWater size={11} className="text-blue-400/60" />
                         <span className="text-sm text-white">{formatWater(entry.amount)}</span>
                         <span className="text-xs text-[#555555]">
                           {new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <button className="text-[#FF4757]/50 hover:text-[#FF4757] transition-colors p-1" onClick={() => removeWaterEntry(i)}>
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                    </SwipeToDelete>
                   ))}
                 </div>
               </div>
@@ -214,23 +199,19 @@ export default function Nutrition() {
           {/* Meal list */}
           <div className="space-y-2 mb-3">
             {meals.map((meal) => (
-              <Card key={meal.id} border padding="sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{MEAL_EMOJIS[meal.mealType]}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{meal.name}</p>
-                    <p className="text-xs text-[#555555]">
-                      {meal.calories} kcal · P:{meal.protein}g C:{meal.carbs}g F:{meal.fat}g
-                    </p>
+              <SwipeToDelete key={meal.id} onDelete={() => deleteMeal(meal.id)}>
+                <Card border padding="sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{MEAL_EMOJIS[meal.mealType]}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{meal.name}</p>
+                      <p className="text-xs text-[#555555]">
+                        {meal.calories} kcal · P:{meal.protein}g C:{meal.carbs}g F:{meal.fat}g
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    className="text-[#FF4757]/50 hover:text-[#FF4757] transition-colors flex-shrink-0 p-1"
-                    onClick={() => deleteMeal(meal.id)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </Card>
+                </Card>
+              </SwipeToDelete>
             ))}
           </div>
 
