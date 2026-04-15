@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronRight, Loader2, Plus, Search, Sparkles } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { v4 as uuid } from 'uuid'
@@ -6,11 +6,14 @@ import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Select from '../ui/Select'
 import Button from '../ui/Button'
-import { FOOD_CATEGORIES, FOOD_DATABASE, calcMacros, type FoodCategory, type FoodItem } from '../../data/foodDatabase'
+import type { FoodCategory, FoodItem } from '../../data/foodDatabase'
 import { db } from '../../db'
 import type { CustomFood, MealLog, MealType } from '../../db/types'
 import { getTodayString } from '../../utils/dateHelpers'
 import { chat } from '../../services/gemini'
+
+// Type inferred from the module itself — stays in sync automatically
+type FoodDbModule = typeof import('../../data/foodDatabase')
 
 export const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: 'breakfast', label: '🌅 Breakfast' },
@@ -57,13 +60,22 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
+  // ── Lazy food database ────────────────────────────────────────────────────
+  const [foodDb, setFoodDb] = useState<FoodDbModule | null>(null)
+  useEffect(() => {
+    if (isOpen && !foodDb) {
+      import('../../data/foodDatabase').then(setFoodDb)
+    }
+  }, [isOpen, foodDb])
+
   const filteredFoods = useMemo(() => {
-    return FOOD_DATABASE.filter((f) => {
+    if (!foodDb) return []
+    return foodDb.FOOD_DATABASE.filter((f: FoodItem) => {
       const matchCat = foodCategory === 'all' || f.category === foodCategory
       const matchSearch = !foodSearch || f.name.toLowerCase().includes(foodSearch.toLowerCase())
       return matchCat && matchSearch
     })
-  }, [foodSearch, foodCategory])
+  }, [foodDb, foodSearch, foodCategory])
 
   const filteredCustomFoods = useMemo(() => {
     if (!foodSearch) return customFoods
@@ -71,11 +83,11 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
   }, [customFoods, foodSearch])
 
   const preview = useMemo(() => {
-    if (!selectedFood || !quantity) return null
+    if (!selectedFood || !quantity || !foodDb) return null
     const q = parseFloat(quantity)
     if (!q || q <= 0) return null
-    return calcMacros(selectedFood, q)
-  }, [selectedFood, quantity])
+    return foodDb.calcMacros(selectedFood, q)
+  }, [foodDb, selectedFood, quantity])
 
   const handleSelectFood = (food: FoodItem) => {
     setSelectedFood(food)
@@ -230,6 +242,11 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
         {logMode === 'food' && (
           <>
             {!selectedFood ? (
+              !foodDb ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={20} className="animate-spin text-[#555]" />
+                </div>
+              ) : (
               <>
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555555]" />
@@ -244,7 +261,7 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {FOOD_CATEGORIES.map((cat) => (
+                  {(foodDb?.FOOD_CATEGORIES ?? []).map((cat) => (
                     <button
                       key={cat.id}
                       className={`flex-shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full transition-all font-medium ${
@@ -321,6 +338,7 @@ export default function LogMealModal({ isOpen, onClose }: { isOpen: boolean; onC
                   )}
                 </div>
               </>
+              )
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
