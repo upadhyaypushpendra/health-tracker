@@ -62,7 +62,11 @@ jobs:
           name: debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
 
-      - name: Upload Release Asset
-        run: gh release upload ${{ github.ref_name }} android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Create and Upload Release
+        run: |
+          gh release create "v${{ github.run_number }}" \
+            --title "Build ${{ github.run_number }}" \
+            --notes "Automatic build from branch ${{ github.ref_name }}" \
+            android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
