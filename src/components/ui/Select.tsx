@@ -12,16 +12,18 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string
 }
 
-export default function Select({ label, options, error, className = '', ...props }: SelectProps) {
+export default function Select({ label, options, error, className = '', id, ...props }: SelectProps) {
+  const selectId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wider">
+        <label htmlFor={selectId} className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wider">
           {label}
         </label>
       )}
       <div className="relative">
         <select
+          id={selectId}
           className={`
             w-full bg-[#111111] border rounded-[10px] px-3 py-2.5 pr-8
             text-white text-sm
