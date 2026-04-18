@@ -74,14 +74,11 @@ function FoodIcon({ percentage }: { percentage: number }) {
         : `M 0 ${surfaceY} L ${FOOD_VB} ${surfaceY} L ${FOOD_VB} ${fillBottom} L 0 ${fillBottom} Z`)
     : null
 
-  // Color: green → amber → red
-  const fillColor =
-    clamped < 50
-      ? `hsl(${140 - clamped * 1.4}, 70%, 55%)`
-      : `hsl(${70 - (clamped - 50) * 1.4}, 80%, 55%)`
+  // Color: red → amber → green → red(over) as level increases past goal
+  const fillColor = percentage > 100 ? '#f87171' : `hsl(${clamped * 1.4}, 75%, 55%)`
 
   const iconColor =
-    clamped < 50 ? '#4ade80' : clamped < 80 ? '#fbbf24' : '#f87171'
+    percentage > 100 ? '#f87171' : clamped < 50 ? '#f87171' : clamped < 80 ? '#fbbf24' : '#4ade80'
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: 80, height: 80 }}>
@@ -167,9 +164,9 @@ export default function FoodSection() {
     setTimeout(() => setJustLogged((prev) => { const n = new Set(prev); n.delete(food.name); return n }), 1500)
   }
 
-  const accentColor = caloriePct < 50 ? '#4ade80' : caloriePct < 80 ? '#fbbf24' : '#f87171'
-  const accentBg = caloriePct < 50 ? 'from-[#0A2010] to-[#0D1A10]' : caloriePct < 80 ? 'from-[#1A1400] to-[#1A1200]' : 'from-[#1A0A0A] to-[#1A0808]'
-  const borderColor = caloriePct < 50 ? 'border-green-900/30' : caloriePct < 80 ? 'border-yellow-900/30' : 'border-red-900/30'
+  const accentColor = caloriePct > 100 ? '#f87171' : caloriePct < 50 ? '#f87171' : caloriePct < 80 ? '#fbbf24' : '#4ade80'
+  const accentBg = caloriePct > 100 ? 'from-[#1A0A0A] to-[#1A0808]' : caloriePct < 50 ? 'from-[#1A0A0A] to-[#1A0808]' : caloriePct < 80 ? 'from-[#1A1400] to-[#1A1200]' : 'from-[#0A2010] to-[#0D1A10]'
+  const borderColor = caloriePct > 100 ? 'border-red-900/30' : caloriePct < 50 ? 'border-red-900/30' : caloriePct < 80 ? 'border-yellow-900/30' : 'border-green-900/30'
 
   return (
     <div className={`mb-5 rounded-2xl bg-gradient-to-b ${accentBg} border ${borderColor} p-4`}>
