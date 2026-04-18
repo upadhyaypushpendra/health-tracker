@@ -251,6 +251,9 @@ export default function Settings() {
           <Card border>
             <p className="text-xs text-[#555555] mb-3 leading-relaxed">
               Bring your own Gemini API key to use the AI Coach without rate limits. Leave blank to use the shared key.
+              Generate your API key at <a href="https://aistudio.google.com/api-keys" target="_blank" className="text-[#00FF87]">Google AI Studio</a>.
+              Use <b>Create API Key</b> button to create a new key and copy the generated key here. 
+              <i><b>Your key is stored securely on your device and never shared with anyone else.</b></i>
             </p>
             <div className="relative">
               <input
