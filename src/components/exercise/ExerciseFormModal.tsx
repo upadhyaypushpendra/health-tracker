@@ -38,7 +38,7 @@ const EMPTY_FORM = {
   muscleGroup: 'chest' as MuscleGroup,
   defaultSets: '3',
   defaultReps: '10',
-  defaultWeight: '0',
+  defaultWeight: '1',
   unit: 'kg' as ExerciseUnit,
   description: '',
 }
@@ -147,7 +147,7 @@ export default function ExerciseFormModal({
 
         {(() => {
           const showReps = form.unit !== 'minutes' && form.unit !== 'meters'
-          const showWeight = form.unit === 'kg' || form.unit === 'lbs'
+          const showWeight = form.unit !== 'bodyweight';
           const cols = showWeight ? 'grid-cols-3' : showReps ? 'grid-cols-2' : 'grid-cols-1'
           return (
             <div className={`grid ${cols} gap-3`}>

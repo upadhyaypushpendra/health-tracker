@@ -15,8 +15,8 @@ function Field({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function PlannedExerciseInputs({ exercise: ex, unit }: PlannedExerciseInputsProps) {
-  const showReps = unit !== 'minutes' && unit !== 'meters'
-  const showWeight = unit === 'kg' || unit === 'lbs'
+  const showReps = unit !== 'minutes' && unit !== 'meters';
+  const showWeight = unit !== 'bodyweight';
 
   return (
     <div className={`grid gap-2 ${showWeight ? 'grid-cols-4' : showReps ? 'grid-cols-3' : 'grid-cols-2'}`}>
