@@ -54,7 +54,7 @@ export default function Modal({ isOpen, onClose, title, children, fullHeight }: 
         {/* Header */}
         {title && (
           <div className="flex-shrink-0 flex items-center justify-between px-5 pb-3 pt-1">
-            <h2 className="text-lg font-bold text-white">{title}</h2>
+            <h2 className="text-lg font-bold text-white text-center flex-1">{title}</h2>
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-[#666666] hover:text-white hover:bg-[#2A2A2A] transition-all"
