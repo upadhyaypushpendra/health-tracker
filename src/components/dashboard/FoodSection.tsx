@@ -75,10 +75,10 @@ function FoodIcon({ percentage }: { percentage: number }) {
     : null
 
   // Color: red → amber → green → red(over) as level increases past goal
-  const fillColor = percentage > 100 ? '#f87171' : `hsl(${clamped * 1.4}, 75%, 55%)`
+  const fillColor = percentage > 100 ? '#ef4444' : `hsl(${clamped * 1.4}, 85%, 52%)`
 
   const iconColor =
-    percentage > 100 ? '#f87171' : clamped < 50 ? '#f87171' : clamped < 80 ? '#fbbf24' : '#4ade80'
+    percentage > 100 ? '#ef4444' : clamped < 50 ? '#ef4444' : clamped < 80 ? '#f59e0b' : '#22c55e'
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: 80, height: 80 }}>
@@ -164,28 +164,28 @@ export default function FoodSection() {
     setTimeout(() => setJustLogged((prev) => { const n = new Set(prev); n.delete(food.name); return n }), 1500)
   }
 
-  const accentColor = caloriePct > 100 ? '#f87171' : caloriePct < 50 ? '#f87171' : caloriePct < 80 ? '#fbbf24' : '#4ade80'
-  const accentBg = caloriePct > 100 ? 'from-[#1A0A0A] to-[#1A0808]' : caloriePct < 50 ? 'from-[#1A0A0A] to-[#1A0808]' : caloriePct < 80 ? 'from-[#1A1400] to-[#1A1200]' : 'from-[#0A2010] to-[#0D1A10]'
-  const borderColor = caloriePct > 100 ? 'border-red-900/30' : caloriePct < 50 ? 'border-red-900/30' : caloriePct < 80 ? 'border-yellow-900/30' : 'border-green-900/30'
+  const accentColor = '#ffffff'
+  const accentBg = 'from-[#FF8B20] to-[#000000]'
+  const borderColor = caloriePct > 100 ? 'border-red-600/50' : 'border-orange-600/40'
 
   return (
-    <div className={`mb-5 rounded-2xl bg-gradient-to-b ${accentBg} border ${borderColor} p-4`}>
+    <div className={`mb-5 rounded-2xl bg-gradient-to-b ${accentBg} border ${borderColor} p-4 shadow-lg`}>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: `${accentColor}99` }}>
+          <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: `${accentColor}` }}>
             Nutrition
           </p>
           <p className="text-lg font-black text-white mt-0.5">
             {calorieTotal.toLocaleString()}
-            <span className="text-sm font-medium ml-1.5" style={{ color: `${accentColor}66` }}>
+            <span className="text-sm font-medium ml-1.5" style={{ color: accentColor }}>
               / {calorieGoal.toLocaleString()} kcal
             </span>
           </p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-black" style={{ color: accentColor }}>{Math.round(caloriePct)}%</p>
-          <p className="text-[10px] mt-0.5" style={{ color: `${accentColor}66` }}>
-            {caloriePct >= 100 ? '🎉 Goal reached!' : `${remaining.toLocaleString()} kcal left`}
+          <p className="text-[16px] mt-0.5" style={{ color: `${accentColor}90` }}>
+            {caloriePct >= 100 ? 'Goal reached!' : `${remaining.toLocaleString()} kcal left`}
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function FoodSection() {
             <div key={label}>
               <div className="flex justify-between text-[10px] mb-1">
                 <span className="font-semibold" style={{ color }}>{label}</span>
-                <span className="text-[#555555]">{Math.round(value)}g / {max}g</span>
+                <span className="text-[#d8d8d8]">{Math.round(value)}g / {max}g</span>
               </div>
               <div className="h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
                 <div
@@ -219,7 +219,7 @@ export default function FoodSection() {
 
       {recentFoods.length > 0 && (
         <div className="mb-3">
-          <p className="text-[10px] text-[#555555] uppercase tracking-wider font-semibold mb-2">
+          <p className="text-[10px] text-[#ffffff] uppercase tracking-wider font-semibold mb-2">
             {MEAL_EMOJIS[currentMealType]} Quick Log · tap to add
           </p>
           <div className="flex flex-col gap-1.5">
@@ -247,8 +247,8 @@ export default function FoodSection() {
 
       <button
         onClick={() => setShowModal(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.97]"
-        style={{ background: `${accentColor}15`, color: accentColor, border: `1px solid ${accentColor}25` }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-[#ff8b2050]"
+        style={{ background: `#FF8B20`, color: 'white' }}
       >
         <Plus size={16} />
         Log Food / Meal

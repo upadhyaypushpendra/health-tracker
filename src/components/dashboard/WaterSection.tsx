@@ -5,11 +5,12 @@ import { useTodayWater } from '../../hooks/useTodayWater'
 import { getSettings } from '../../db'
 import { formatWater, pct, totalWater } from '../../utils/calculations'
 import { hapticLight } from '../../utils/haptics'
+import { Plus } from 'lucide-react'
 
 const WATER_PRESETS = [
-  { label: '½ glass', amount: 125 },
-  { label: '1 glass', amount: 250 },
-  { label: '2 glasses', amount: 500 },
+  { label: '½ Glass', amount: 125 },
+  { label: '1 Glass', amount: 250 },
+  { label: '2 Glasses', amount: 500 },
 ]
 
 // Generates a wave-topped filled path
@@ -78,7 +79,7 @@ function WaterBottle({ percentage }: { percentage: number }) {
         className="absolute inset-0 rounded-full blur-xl transition-all duration-700 pointer-events-none"
         style={{ background: `rgba(96,165,250,${glowOpacity})` }}
       />
-      <svg viewBox="0 0 512 512" width="130" height="240" style={{ overflow: 'visible' }}>
+      <svg viewBox="0 0 512 512" width="140" height="240" style={{ overflow: 'visible' }}>
         <defs>
           {/* Rectangular inner body of this bottle SVG */}
           <clipPath id="water-bottle-clip">
@@ -126,10 +127,10 @@ export default function WaterSection() {
   const waterPct = pct(waterTotal, waterGoal)
 
   return (
-    <div className="mb-5 rounded-2xl bg-gradient-to-b from-[#0A1628] to-[#0D1520] border border-blue-900/30 p-4">
+    <div className="mb-5 rounded-2xl bg-gradient-to-b from-[#1250ad] to-[#000000] border border-blue-900 p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs text-blue-400/70 uppercase tracking-wider font-semibold">Hydration</p>
+          <p className="text-xs text-white-400/70 uppercase tracking-wider font-semibold">Hydration</p>
           <p className="text-lg font-black text-white mt-0.5">
             {formatWater(waterTotal)}
             <span className="text-sm font-medium text-blue-400/60 ml-1.5">/ {formatWater(waterGoal)}</span>
@@ -153,10 +154,14 @@ export default function WaterSection() {
             <button
               key={label}
               onClick={() => { hapticLight(); addWater(amount) }}
-              className="flex items-center justify-between px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 active:scale-[0.97] rounded-xl transition-all border border-blue-500/10"
+              className="flex items-center justify-between px-4 py-3 bg-blue-500/10 rounded-xl transition-all shadow-sm/80 shadow-blue-500/20"
             >
-              <span className="text-sm font-bold text-blue-300">+{label}</span>
-              <span className="text-xs text-blue-400/60 font-medium">{amount} ml</span>
+             
+              <span className="text-sm font-bold text-white-300 inline-flex items-center gap-3">
+                 <Plus size={28} className="text-blue-400" />
+                {label}
+              </span>
+              <span className="text-xs text-[#c4bdbde6] font-medium">{amount} ml</span>
             </button>
           ))}
         </div>
