@@ -37,8 +37,10 @@ export default function PlanBuilder() {
   const allExercises = useLiveQuery(() => db.exercises.toArray(), [])
 
   const [name, setName] = useState('')
-  const [calorieTarget, setCalorieTarget] = useState('2000')
-  const [waterTarget, setWaterTarget] = useState('3000')
+  const [calorieGoal, setCalorieGoal] = useState('2000')
+  const [proteinGoal, setProteinGoal] = useState('150')
+  const [carbsGoal, setCarbsGoal] = useState('200')
+  const [weightGoal, setWeightGoal] = useState('')
   const [weekTemplate, setWeekTemplate] = useState<DayPlan[]>(makeEmptyWeek())
   const [expandedDay, setExpandedDay] = useState<number | null>(1)
   const [showExercisePicker, setShowExercisePicker] = useState<number | null>(null)
@@ -52,8 +54,10 @@ export default function PlanBuilder() {
   useEffect(() => {
     if (existingPlan) {
       setName(existingPlan.name)
-      setCalorieTarget(String(existingPlan.calorieTarget))
-      setWaterTarget(String(existingPlan.waterTarget))
+      setCalorieGoal(String(existingPlan.calorieGoal))
+      setProteinGoal(String(existingPlan.proteinGoal))
+      setCarbsGoal(String(existingPlan.carbsGoal))
+      setWeightGoal(existingPlan.weightGoal ? String(existingPlan.weightGoal) : '')
       setWeekTemplate(existingPlan.weekTemplate)
     }
   }, [existingPlan])
@@ -126,8 +130,10 @@ export default function PlanBuilder() {
       const plan: Plan = {
         id: id ?? uuid(),
         name: name.trim(),
-        calorieTarget: parseInt(calorieTarget) || 2000,
-        waterTarget: parseInt(waterTarget) || 3000,
+        calorieGoal: parseInt(calorieGoal) || 2000,
+        proteinGoal: parseInt(proteinGoal) || 150,
+        carbsGoal: parseInt(carbsGoal) || 200,
+        weightGoal: weightGoal ? parseFloat(weightGoal) : null,
         weekTemplate,
         isActive: existingPlan?.isActive ?? false,
         createdAt: existingPlan?.createdAt ?? now,
@@ -171,18 +177,34 @@ export default function PlanBuilder() {
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Calorie Target"
+                label="Calorie Goal"
                 type="number"
                 suffix="kcal"
-                value={calorieTarget}
-                onChange={(e) => setCalorieTarget(e.target.value)}
+                value={calorieGoal}
+                onChange={(e) => setCalorieGoal(e.target.value)}
               />
               <Input
-                label="Water Target"
+                label="Weight Goal"
                 type="number"
-                suffix="ml"
-                value={waterTarget}
-                onChange={(e) => setWaterTarget(e.target.value)}
+                suffix="kg"
+                value={weightGoal}
+                onChange={(e) => setWeightGoal(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Protein Goal"
+                type="number"
+                suffix="g"
+                value={proteinGoal}
+                onChange={(e) => setProteinGoal(e.target.value)}
+              />
+              <Input
+                label="Carbs Goal"
+                type="number"
+                suffix="g"
+                value={carbsGoal}
+                onChange={(e) => setCarbsGoal(e.target.value)}
               />
             </div>
           </div>

@@ -49,7 +49,7 @@ export default function PageHeader({ title, subtitle, back, right }: PageHeaderP
             {subtitle && <p className="text-xs text-[#666666] mt-0.5">{subtitle}</p>}
           </div>
         </div>
-        {right && <div className="flex items-center gap-2">{right}</div>}
+        {right && <div className="flex items-center gap-2 flex-shrink-0">{right}</div>}
       </header>
 
       {back !== undefined && (

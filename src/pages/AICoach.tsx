@@ -25,8 +25,10 @@ function normalizePlan(raw: any): Partial<Plan> {
   return {
     name: raw.name ?? "AI Generated Plan",
     description: raw.description,
-    calorieTarget: Number(raw.calorieTarget) || 2000,
-    waterTarget: Number(raw.waterTarget) || 3000,
+    calorieGoal: Number(raw.calorieGoal) || 2000,
+    proteinGoal: Number(raw.proteinGoal) || 150,
+    carbsGoal: Number(raw.carbsGoal) || 200,
+    weightGoal: raw.weightGoal ? Number(raw.weightGoal) : null,
     weekTemplate: (raw.weekTemplate ?? []).map((day: any) => ({
       dayOfWeek: day.dayOfWeek,
       isRest: Boolean(day.isRest),
@@ -90,13 +92,11 @@ function PlanPreview({
         <div className="flex gap-2">
           <div className="flex-1 bg-[#0D0D0D] rounded-xl px-3 py-2 text-center">
             <p className="text-[10px] text-white/40 mb-0.5">Calories</p>
-            <p className="text-sm font-bold text-[#00FF87]">{plan.calorieTarget} kcal</p>
+            <p className="text-sm font-bold text-[#00FF87]">{plan.calorieGoal} kcal</p>
           </div>
           <div className="flex-1 bg-[#0D0D0D] rounded-xl px-3 py-2 text-center">
-            <p className="text-[10px] text-white/40 mb-0.5">Water</p>
-            <p className="text-sm font-bold text-blue-400">
-              {((plan.waterTarget ?? 3000) / 1000).toFixed(1)} L
-            </p>
+            <p className="text-[10px] text-white/40 mb-0.5">Protein</p>
+            <p className="text-sm font-bold text-blue-400">{plan.proteinGoal ?? '—'} g</p>
           </div>
         </div>
       </div>

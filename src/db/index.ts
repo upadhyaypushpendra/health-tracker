@@ -1,6 +1,11 @@
 import Dexie, { type Table } from 'dexie'
 import type { Plan, WorkoutLog, WaterLog, MealLog, BodyMetric, Exercise, UserSettings, CustomFood } from './types'
 
+interface MigrationRecord {
+  id: string
+  appliedAt: string
+}
+
 class BodySyncDB extends Dexie {
   plans!: Table<Plan, string>
   workoutLogs!: Table<WorkoutLog, string>
@@ -10,6 +15,7 @@ class BodySyncDB extends Dexie {
   exercises!: Table<Exercise, string>
   settings!: Table<UserSettings, string>
   customFoods!: Table<CustomFood, string>
+  migrations!: Table<MigrationRecord, string>
 
   constructor() {
     super('BodySyncDB')
@@ -34,6 +40,18 @@ class BodySyncDB extends Dexie {
       settings: 'key',
       customFoods: 'id, name, createdAt',
     })
+
+    this.version(3).stores({
+      plans: 'id, name, isActive, createdAt',
+      workoutLogs: 'id, date, planId, completed',
+      waterLogs: 'id, date',
+      mealLogs: 'id, date, mealType, createdAt',
+      bodyMetrics: 'id, date',
+      exercises: 'id, name, muscleGroup, isCustom',
+      settings: 'key',
+      customFoods: 'id, name, createdAt',
+      migrations: 'id',
+    })
   }
 }
 
@@ -44,14 +62,13 @@ export const db = new BodySyncDB()
 export async function getSettings(): Promise<UserSettings> {
   const s = await db.settings.get('user')
   if (s) return s
-  // Default settings
   const defaults: UserSettings = {
     key: 'user',
     name: '',
-    goalWeight: null,
+    gender: null,
+    currentWeight: null,
     height: null,
     waterGoal: 3000,
-    calorieGoal: 2000,
     weightUnit: 'kg',
     notificationsEnabled: false,
     workoutReminderTime: null,

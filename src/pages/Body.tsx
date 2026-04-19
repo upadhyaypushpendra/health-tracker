@@ -76,9 +76,9 @@ export default function Body() {
               <p className="text-xs text-[#666666] mb-1">Weight</p>
               <p className="text-xl font-black text-white">{latest.weight ?? '—'}</p>
               <p className="text-xs text-[#555555]">kg</p>
-              {settings?.goalWeight && latest.weight && (
+              {settings?.currentWeight && latest.weight && (
                 <p className="text-[10px] text-[#00FF87] mt-1">
-                  {(latest.weight - settings.goalWeight).toFixed(1)} to goal
+                  {(latest.weight - settings.currentWeight).toFixed(1)} to goal
                 </p>
               )}
             </Card>
@@ -115,7 +115,7 @@ export default function Body() {
           <Suspense fallback={<div className="h-44 bg-[#2A2A2A] rounded-2xl animate-pulse" />}>
             <Card border>
               <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-4">Weight Trend</p>
-              <BodyTrendChart data={chartData} goalWeight={settings?.goalWeight ?? null} />
+              <BodyTrendChart data={chartData} goalWeight={settings?.currentWeight ?? null} />
             </Card>
           </Suspense>
         )}

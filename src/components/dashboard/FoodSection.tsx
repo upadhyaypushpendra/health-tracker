@@ -3,7 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { CheckCircle2, Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-import { db, getSettings } from '../../db'
+import { db } from '../../db'
+import { useActivePlan } from '../../hooks/useActivePlan'
 import { useTodayMeals } from '../../hooks/useTodayMeals'
 import { pct, totalCalories, totalMacros } from '../../utils/calculations'
 import { getTodayString } from '../../utils/dateHelpers'
@@ -125,14 +126,14 @@ function FoodIcon({ percentage }: { percentage: number }) {
 
 export default function FoodSection() {
   const todayMeals = useTodayMeals()
-  const settings = useLiveQuery(() => getSettings())
+  const activePlan = useActivePlan()
   const [showModal, setShowModal] = useState(false)
   const [justLogged, setJustLogged] = useState<Set<string>>(new Set())
 
   const currentMealType = getCurrentMealType()
 
   const calorieTotal = totalCalories(todayMeals)
-  const calorieGoal = settings?.calorieGoal ?? 2000
+  const calorieGoal = activePlan?.calorieGoal ?? 2000
   const caloriePct = pct(calorieTotal, calorieGoal)
   const macros = totalMacros(todayMeals)
   const remaining = Math.max(0, calorieGoal - calorieTotal)

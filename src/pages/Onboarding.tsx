@@ -19,10 +19,10 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
+  const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
   const [height, setHeight] = useState('')
-  const [goalWeight, setGoalWeight] = useState('')
+  const [currentWeight, setCurrentWeight] = useState('')
   const [waterGoal, setWaterGoal] = useState('3000')
-  const [calorieGoal, setCalorieGoal] = useState('2000')
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
 
   const plans = useLiveQuery(() => db.plans.toArray(), [])
@@ -33,10 +33,10 @@ export default function Onboarding() {
     if (isLast) {
       await updateSettings({
         name: name.trim() || 'Athlete',
+        gender,
         height: height ? parseFloat(height) : null,
-        goalWeight: goalWeight ? parseFloat(goalWeight) : null,
+        currentWeight: currentWeight ? parseFloat(currentWeight) : null,
         waterGoal: parseInt(waterGoal) || 3000,
-        calorieGoal: parseInt(calorieGoal) || 2000,
         onboardingCompleted: true,
         activePlanId: selectedPlanId,
       })
@@ -114,6 +114,25 @@ export default function Onboarding() {
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
               />
+              <div>
+                <p className="text-xs font-medium text-[#A0A0A0] mb-2">Gender</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['male', 'female', 'other'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`py-2 rounded-xl text-sm font-medium transition-colors ${
+                        gender === g
+                          ? 'bg-[#00FF87] text-[#0D0D0D]'
+                          : 'bg-[#1A1A1A] text-[#555555] border border-[#2A2A2A]'
+                      }`}
+                    >
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Input
                 name="height"
                 label="Height"
@@ -125,13 +144,13 @@ export default function Onboarding() {
               />
               <Input
                 name="goalWeight"
-                label="Goal Weight"
+                label="Current Weight"
                 type="number"
                 placeholder="75"
                 suffix="kg"
-                value={goalWeight}
-                onChange={(e) => setGoalWeight(e.target.value)}
-                hint="Optional — used for trend charts"
+                value={currentWeight}
+                onChange={(e) => setCurrentWeight(e.target.value)}
+                hint="Optional — used for progress tracking"
               />
             </div>
           </div>
@@ -153,16 +172,6 @@ export default function Onboarding() {
                 value={waterGoal}
                 onChange={(e) => setWaterGoal(e.target.value)}
                 hint="Recommended: 2000–4000ml"
-              />
-              <Input
-                name="calorie-goal"
-                label="Daily Calorie Goal"
-                type="number"
-                placeholder="2000"
-                suffix="kcal"
-                value={calorieGoal}
-                onChange={(e) => setCalorieGoal(e.target.value)}
-                hint="Adjust based on your fitness goal"
               />
             </div>
           </div>
@@ -213,9 +222,8 @@ export default function Onboarding() {
             </div>
             <div className="bg-[#1A1A1A] rounded-2xl p-4 space-y-3">
               <SummaryRow label="Water Goal" value={`${parseInt(waterGoal) >= 1000 ? (parseInt(waterGoal) / 1000).toFixed(1) + 'L' : waterGoal + 'ml'}`} />
-              <SummaryRow label="Calorie Goal" value={`${calorieGoal} kcal`} />
               {height && <SummaryRow label="Height" value={`${height} cm`} />}
-              {goalWeight && <SummaryRow label="Goal Weight" value={`${goalWeight} kg`} />}
+              {currentWeight && <SummaryRow label="Current Weight" value={`${currentWeight} kg`} />}
               <SummaryRow
                 label="Plan"
                 value={selectedPlanId ? (plans?.find((p) => p.id === selectedPlanId)?.name ?? '—') : 'Custom (add later)'}
@@ -288,11 +296,7 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
         </span>
         <span className="flex items-center gap-1 text-[10px] text-[#555555]">
           <Flame size={10} className="text-[#FF6B35]" />
-          {plan.calorieTarget} kcal target
-        </span>
-        <span className="flex items-center gap-1 text-[10px] text-[#555555]">
-          <Droplets size={10} className="text-blue-400" />
-          {plan.waterTarget >= 1000 ? (plan.waterTarget / 1000).toFixed(1) + 'L' : plan.waterTarget + 'ml'}
+          {plan.calorieGoal} kcal target
         </span>
       </div>
     </button>

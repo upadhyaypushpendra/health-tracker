@@ -107,7 +107,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: '5-Day Strength — Beginner',
       description: 'Classic push/pull/legs split for beginners. Focus on form over weight.',
-      calorieTarget: 2200, waterTarget: 3000,
+      calorieGoal: 2200, proteinGoal: 160, carbsGoal: 250, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),
@@ -143,7 +143,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: '5-Day Strength — Intermediate',
       description: 'Higher volume push/pull/legs with progressive overload. Assumes 6+ months of training.',
-      calorieTarget: 2600, waterTarget: 3500,
+      calorieGoal: 2600, proteinGoal: 190, carbsGoal: 300, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),
@@ -180,7 +180,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: 'Weight Loss — Beginner',
       description: 'Full-body circuits 5 days a week combined with steady-state cardio. Low rest, high rep.',
-      calorieTarget: 1700, waterTarget: 3500,
+      calorieGoal: 1700, proteinGoal: 140, carbsGoal: 160, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),
@@ -217,7 +217,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: 'Weight Loss — Intermediate',
       description: 'Compound lifts superset with cardio intervals. Higher intensity to maximise calorie burn.',
-      calorieTarget: 1900, waterTarget: 3500,
+      calorieGoal: 1900, proteinGoal: 155, carbsGoal: 180, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),
@@ -253,7 +253,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: 'Abs — Beginner',
       description: '5-day core-focused program using bodyweight exercises. Builds foundational strength.',
-      calorieTarget: 2000, waterTarget: 3000,
+      calorieGoal: 2000, proteinGoal: 150, carbsGoal: 220, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),
@@ -286,7 +286,7 @@ export async function seedSamplePlans(): Promise<void> {
     {
       id: uuid(), name: 'Abs — Intermediate',
       description: 'Higher volume core training with weighted exercises and full-body integration.',
-      calorieTarget: 2100, waterTarget: 3000,
+      calorieGoal: 2100, proteinGoal: 160, carbsGoal: 230, weightGoal: null,
       isActive: false, createdAt: now, updatedAt: now,
       weekTemplate: [
         rest(0),

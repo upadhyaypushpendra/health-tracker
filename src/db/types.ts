@@ -57,8 +57,10 @@ export interface Plan {
   name: string
   description?: string
   weekTemplate: DayPlan[]
-  calorieTarget: number
-  waterTarget: number // ml
+  calorieGoal: number      // kcal/day target for this plan
+  proteinGoal: number      // grams/day
+  carbsGoal: number        // grams/day
+  weightGoal: number | null // target body weight in kg
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -145,15 +147,15 @@ export interface BodyMetric {
 export interface UserSettings {
   key: 'user'
   name: string
-  goalWeight: number | null // kg
-  height: number | null // cm
-  waterGoal: number // ml, default 3000
-  calorieGoal: number // kcal, default 2000
+  gender: 'male' | 'female' | 'other' | null
+  currentWeight: number | null // kg
+  height: number | null        // cm
+  waterGoal: number            // ml, default 3000
   weightUnit: 'kg' | 'lbs'
   notificationsEnabled: boolean
-  workoutReminderTime: string | null // 'HH:MM'
+  workoutReminderTime: string | null  // 'HH:MM'
   waterReminderInterval: number | null // minutes
-  mealReminderTimes: string[] // ['HH:MM', ...]
+  mealReminderTimes: string[]          // ['HH:MM', ...]
   onboardingCompleted: boolean
   activePlanId: string | null
   createdAt: string

@@ -16,12 +16,7 @@ export default function Plan() {
   const activePlanId = settings?.activePlanId
 
   const handleActivate = async (id: string) => {
-    const plan = plans?.find((p) => p.id === id)
-    await updateSettings({
-      activePlanId: id,
-      ...(plan ? { calorieGoal: plan.calorieTarget, waterGoal: plan.waterTarget } : {}),
-    })
-    // Mark isActive on the plan records for easier querying
+    await updateSettings({ activePlanId: id })
     await db.plans.toCollection().modify({ isActive: false })
     await db.plans.update(id, { isActive: true })
   }
@@ -107,7 +102,7 @@ export default function Plan() {
                       )}
                     </div>
                     <p className="text-xs text-[#666666]">
-                      {workoutDays} workout days · {plan.calorieTarget} kcal target
+                      {workoutDays} workout days · {plan.calorieGoal} kcal target
                     </p>
                     <div className="flex gap-1 mt-2">
                       {plan.weekTemplate.map((day, i) => (

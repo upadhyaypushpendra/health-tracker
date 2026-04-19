@@ -28,6 +28,13 @@ export function BodyTrendChart({ data, goalWeight }: BodyTrendChartProps) {
     dateLabel: format(parseISO(d.date), 'MMM d'),
   }))
 
+  const weights = data.map(d => d.weight).filter((w): w is number => w !== null)
+  const allValues = goalWeight !== null ? [...weights, goalWeight] : weights
+  const min = allValues.length ? Math.min(...allValues) : 0
+  const max = allValues.length ? Math.max(...allValues) : 100
+  const pad = Math.max(1, (max - min) * 0.1)
+  const yDomain: [number, number] = [Math.floor(min - pad), Math.ceil(max + pad)]
+
   return (
     <ResponsiveContainer width="100%" height={180}>
       <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -43,7 +50,7 @@ export function BodyTrendChart({ data, goalWeight }: BodyTrendChartProps) {
           tick={{ fill: '#555555', fontSize: 10 }}
           axisLine={false}
           tickLine={false}
-          domain={['auto', 'auto']}
+          domain={yDomain}
         />
         <Tooltip
           contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: 8, color: '#fff', fontSize: 12 }}

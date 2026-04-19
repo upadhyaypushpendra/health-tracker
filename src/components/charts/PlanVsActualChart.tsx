@@ -5,6 +5,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -17,6 +18,7 @@ interface DataPoint {
 interface PlanVsActualChartProps {
   data: DataPoint[]
   unit?: string
+  referenceLine?: number
 }
 
 /** Single SVG group: gray background (= target) + colored overlay (= actual) */
@@ -65,7 +67,7 @@ const CustomTooltip = ({ active, payload, label, unit }: any) => {
   )
 }
 
-export function PlanVsActualChart({ data, unit = '' }: PlanVsActualChartProps) {
+export function PlanVsActualChart({ data, unit = '', referenceLine }: PlanVsActualChartProps) {
   return (
     <ResponsiveContainer width="100%" height={160}>
       <BarChart data={data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }} barCategoryGap="30%">
@@ -85,6 +87,14 @@ export function PlanVsActualChart({ data, unit = '' }: PlanVsActualChartProps) {
         <Tooltip content={<CustomTooltip unit={unit} />} cursor={false} />
         {/* Single bar — custom shape handles both background and overlay */}
         <Bar dataKey="target" maxBarSize={28} shape={<OverlayBar />} isAnimationActive={false} />
+        {referenceLine !== undefined && (
+          <ReferenceLine
+            y={referenceLine}
+            stroke="#00FF87"
+            strokeDasharray="4 4"
+            label={{ value: `${referenceLine} ${unit}`, fill: '#00FF87', fontSize: 10, position: 'insideTopRight' }}
+          />
+        )}
       </BarChart>
     </ResponsiveContainer>
   )

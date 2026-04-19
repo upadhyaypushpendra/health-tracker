@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Download, Upload, Trash2, Bell, ChevronRight, User, ClipboardList, Dumbbell, Bot, Eye, EyeOff } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog } from '@capacitor/dialog'
+import { v4 as uuid } from 'uuid'
 import PageHeader from '../components/layout/PageHeader'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -13,6 +14,8 @@ import { exportData, importData } from '../utils/exportImport'
 import { useNotifications } from '../hooks/useNotifications'
 import { isNative } from '../utils/platform'
 import { getGeminiApiKey, setGeminiApiKey } from '../services/gemini'
+import { getTodayString } from '../utils/dateHelpers'
+import { calculateBMI } from '../utils/calculations'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -20,10 +23,10 @@ export default function Settings() {
   const { requestPermission, isSupported, isGranted, scheduleWorkoutReminder, cancelWorkoutReminder, startWaterReminders, stopWaterReminders } = useNotifications()
 
   const [name, setName] = useState('')
+  const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
   const [height, setHeight] = useState('')
-  const [goalWeight, setGoalWeight] = useState('')
+  const [currentWeight, setCurrentWeight] = useState('')
   const [waterGoal, setWaterGoal] = useState('')
-  const [calorieGoal, setCalorieGoal] = useState('')
   const [saving, setSaving] = useState(false)
   const [importStatus, setImportStatus] = useState<string | null>(null)
   const [geminiKey, setGeminiKey] = useState('')
@@ -43,22 +46,35 @@ export default function Settings() {
   useEffect(() => {
     if (settings) {
       setName(settings.name ?? '')
+      setGender(settings.gender ?? null)
       setHeight(settings.height ? String(settings.height) : '')
-      setGoalWeight(settings.goalWeight ? String(settings.goalWeight) : '')
+      setCurrentWeight(settings.currentWeight ? String(settings.currentWeight) : '')
       setWaterGoal(String(settings.waterGoal))
-      setCalorieGoal(String(settings.calorieGoal))
     }
   }, [settings])
 
   const handleSave = async () => {
     setSaving(true)
+    const parsed = currentWeight ? parseFloat(currentWeight) : null
     await updateSettings({
       name: name.trim(),
+      gender,
       height: height ? parseFloat(height) : null,
-      goalWeight: goalWeight ? parseFloat(goalWeight) : null,
+      currentWeight: parsed,
       waterGoal: parseInt(waterGoal) || 3000,
-      calorieGoal: parseInt(calorieGoal) || 2000,
     })
+    // Auto-log a body metric entry whenever weight is saved
+    if (parsed !== null) {
+      const h = height ? parseFloat(height) : (settings?.height ?? null)
+      const today = getTodayString()
+      const existing = await db.bodyMetrics.where('date').equals(today).first()
+      const bmi = parsed && h ? calculateBMI(parsed, h) : null
+      if (existing) {
+        await db.bodyMetrics.update(existing.id, { weight: parsed, height: h, bmi })
+      } else {
+        await db.bodyMetrics.put({ id: uuid(), date: today, weight: parsed, height: h, bodyFat: null, bmi })
+      }
+    }
     setSaving(false)
   }
 
@@ -164,14 +180,30 @@ export default function Settings() {
           <Card border>
             <div className="space-y-4">
               <Input label="Name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+              <div>
+                <p className="text-xs font-medium text-[#A0A0A0] mb-2">Gender</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['male', 'female', 'other'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`py-2 rounded-xl text-sm font-medium transition-colors ${
+                        gender === g
+                          ? 'bg-[#00FF87] text-[#0D0D0D]'
+                          : 'bg-[#1A1A1A] text-[#555555] border border-[#2A2A2A]'
+                      }`}
+                    >
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Height" type="number" suffix="cm" value={height} onChange={(e) => setHeight(e.target.value)} />
-                <Input label="Goal Weight" type="number" suffix="kg" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} />
+                <Input label="Current Weight" type="number" suffix="kg" value={currentWeight} onChange={(e) => setCurrentWeight(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Input label="Water Goal" type="number" suffix="ml" value={waterGoal} onChange={(e) => setWaterGoal(e.target.value)} />
-                <Input label="Calorie Goal" type="number" suffix="kcal" value={calorieGoal} onChange={(e) => setCalorieGoal(e.target.value)} />
-              </div>
+              <Input label="Water Goal" type="number" suffix="ml" value={waterGoal} onChange={(e) => setWaterGoal(e.target.value)} />
               <Button fullWidth size="sm" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saved!' : 'Save Changes'}
               </Button>

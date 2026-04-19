@@ -48,7 +48,6 @@ export async function buildHealthContext(): Promise<string> {
     ``,
     `User Profile:`,
     `  Name: ${settings.name || "User"}`,
-    `  Calorie goal: ${settings.calorieGoal} kcal/day`,
     `  Water goal: ${settings.waterGoal} ml/day`,
     `  Weight unit: ${settings.weightUnit}`,
     ``,
@@ -57,12 +56,10 @@ export async function buildHealthContext(): Promise<string> {
   if (activePlan) {
     lines.push(`Active Plan: ${activePlan.name}`);
     if (activePlan.description) lines.push(`  ${activePlan.description}`);
-    lines.push(
-      `  Calorie target: ${activePlan.calorieTarget ?? settings.calorieGoal} kcal`
-    );
-    lines.push(
-      `  Water target: ${activePlan.waterTarget ?? settings.waterGoal} ml`
-    );
+    lines.push(`  Calorie goal: ${activePlan.calorieGoal} kcal`);
+    lines.push(`  Protein goal: ${activePlan.proteinGoal} g`);
+    lines.push(`  Carbs goal: ${activePlan.carbsGoal} g`);
+    lines.push(`  Water goal: ${settings.waterGoal} ml`);
     lines.push("");
   }
 
@@ -167,10 +164,10 @@ export async function buildPlanContext(): Promise<string> {
     : null;
 
   const lines = [
-    `Calorie goal:${settings.calorieGoal}kcal Water goal:${settings.waterGoal}ml Unit:${settings.weightUnit}`,
+    `Water goal:${settings.waterGoal}ml Unit:${settings.weightUnit}`,
   ];
   if (activePlan) {
-    lines.push(`Active plan:${activePlan.name} Cal:${activePlan.calorieTarget ?? settings.calorieGoal} Water:${activePlan.waterTarget ?? settings.waterGoal}`);
+    lines.push(`Active plan:${activePlan.name} Cal:${activePlan.calorieGoal} P:${activePlan.proteinGoal}g C:${activePlan.carbsGoal}g`);
   }
   return lines.join("\n");
 }
@@ -185,8 +182,10 @@ Required JSON structure:
   "name": "descriptive plan name",
   "description": "1-2 sentence summary",
   "weekTemplate": [ ...exactly 7 DayPlan objects, dayOfWeek 0=Sunday to 6=Saturday... ],
-  "calorieTarget": number,
-  "waterTarget": number
+  "calorieGoal": number,
+  "proteinGoal": number,
+  "carbsGoal": number,
+  "weightGoal": number | null
 }
 
 DayPlan shape:
@@ -212,6 +211,9 @@ Rules:
 - weekTemplate must have exactly 7 entries (dayOfWeek 0 through 6)
 - Rest days: isRest=true, exercises=[]
 - Use "bodyweight" unit and weight=0 for bodyweight exercises
-- waterTarget is in ml (e.g. 3000 for 3L)
+- calorieGoal is daily kcal target (e.g. 2000)
+- proteinGoal is daily protein in grams (e.g. 150)
+- carbsGoal is daily carbs in grams (e.g. 200)
+- weightGoal is target body weight in kg, or null
 - Use exercise IDs exactly as given in the exercise list`;
 

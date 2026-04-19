@@ -14,6 +14,9 @@ const PlanVsActualChart = lazy(() =>
 const SimpleBarChart = lazy(() =>
   import('../components/charts/SimpleBarChart').then(m => ({ default: m.SimpleBarChart }))
 )
+const BodyTrendChart = lazy(() =>
+  import('../components/charts/BodyTrendChart').then(m => ({ default: m.BodyTrendChart }))
+)
 
 type Range = '7d' | '14d' | '30d'
 
@@ -46,6 +49,12 @@ export default function Progress() {
     [],
   )
 
+  const bodyMetrics = useLiveQuery(
+    () => db.bodyMetrics.where('date').between(dateRange[0], dateRange[dateRange.length - 1], true, true).toArray(),
+    [dateRange[0], dateRange[dateRange.length - 1]],
+    [],
+  )
+
   // ── All-time completed workout dates for streak ───────────────────────────
   const allWorkoutDates = useLiveQuery(
     () => db.workoutLogs.filter(l => l.completed).toArray().then(logs => new Set(logs.map(l => l.date))),
@@ -53,8 +62,8 @@ export default function Progress() {
     new Set<string>(),
   )
 
-  const waterGoal = activePlan?.waterTarget ?? settings?.waterGoal ?? 3000
-  const calorieGoal = activePlan?.calorieTarget ?? settings?.calorieGoal ?? 2000
+  const waterGoal = settings?.waterGoal ?? 3000
+  const calorieGoal = activePlan?.calorieGoal ?? 2000
   const weightUnit = settings?.weightUnit ?? 'kg'
 
   // ── Summary stats ─────────────────────────────────────────────────────────
@@ -185,6 +194,14 @@ export default function Progress() {
     })
   }, [workoutLogs, days])
 
+  // ── Weight chart data ─────────────────────────────────────────────────────
+  const weightChartData = useMemo(() => {
+    if (!bodyMetrics?.length) return []
+    return [...bodyMetrics]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(m => ({ date: m.date, weight: m.weight, bmi: m.bmi, bodyFat: m.bodyFat }))
+  }, [bodyMetrics])
+
   // ── Exercise volume progression (active plan exercises only) ─────────────
   const exerciseVolume = useMemo(() => {
     if (!workoutLogs?.length || !activePlan) return []
@@ -307,7 +324,7 @@ export default function Progress() {
         }>
           <Card border>
             <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-4">🔥 Calories vs Goal</p>
-            <PlanVsActualChart data={calorieData} unit="kcal" />
+            <PlanVsActualChart data={calorieData} unit="kcal" referenceLine={calorieGoal} />
           </Card>
           <Card border>
             <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-4">💧 Water vs Goal</p>
@@ -348,6 +365,16 @@ export default function Progress() {
             )}
           </Card>
         </Suspense>
+
+        {/* ── Weight tracking ── */}
+        {weightChartData.length >= 1 && (
+          <Suspense fallback={<div className="h-44 bg-[#2A2A2A] rounded-2xl animate-pulse" />}>
+            <Card border>
+              <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-4">⚖️ Weight</p>
+              <BodyTrendChart data={weightChartData} goalWeight={activePlan?.weightGoal ?? null} />
+            </Card>
+          </Suspense>
+        )}
 
         {/* ── Exercise volume progression ── */}
         {exerciseVolume.length > 0 && (
