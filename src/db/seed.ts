@@ -15,6 +15,7 @@ const LIBRARY: Omit<Exercise, 'id'>[] = [
   { name: 'Deadlift', muscleGroup: 'back', defaultSets: 4, defaultReps: 5, defaultWeight: 80, unit: 'kg', isCustom: false },
   { name: 'Pull-Ups', muscleGroup: 'back', defaultSets: 4, defaultReps: 8, defaultWeight: 0, unit: 'bodyweight', isCustom: false },
   { name: 'Barbell Row', muscleGroup: 'back', defaultSets: 4, defaultReps: 8, defaultWeight: 60, unit: 'kg', isCustom: false },
+  { name: 'Dumbbell Row', muscleGroup: 'back', defaultSets: 3, defaultReps: 12, defaultWeight: 16, unit: 'kg', isCustom: false },
   { name: 'Lat Pulldown', muscleGroup: 'back', defaultSets: 3, defaultReps: 12, defaultWeight: 55, unit: 'kg', isCustom: false },
   { name: 'Seated Cable Row', muscleGroup: 'back', defaultSets: 3, defaultReps: 12, defaultWeight: 50, unit: 'kg', isCustom: false },
   { name: 'Face Pulls', muscleGroup: 'back', defaultSets: 3, defaultReps: 15, defaultWeight: 20, unit: 'kg', isCustom: false },
@@ -50,7 +51,7 @@ const LIBRARY: Omit<Exercise, 'id'>[] = [
   { name: 'Goblet Squat', muscleGroup: 'legs', defaultSets: 3, defaultReps: 12, defaultWeight: 24, unit: 'kg', isCustom: false },
 
   // ── Core ──────────────────────────────────────────────────────────────────
-  { name: 'Plank', muscleGroup: 'core', defaultSets: 3, defaultReps: 1, defaultWeight: 60, unit: 'minutes', isCustom: false },
+  { name: 'Plank', muscleGroup: 'core', defaultSets: 3, defaultReps: 1, defaultWeight: 1, unit: 'minutes', isCustom: false },
   { name: 'Crunches', muscleGroup: 'core', defaultSets: 3, defaultReps: 20, defaultWeight: 0, unit: 'bodyweight', isCustom: false },
   { name: 'Russian Twists', muscleGroup: 'core', defaultSets: 3, defaultReps: 20, defaultWeight: 0, unit: 'bodyweight', isCustom: false },
   { name: 'Leg Raises', muscleGroup: 'core', defaultSets: 3, defaultReps: 15, defaultWeight: 0, unit: 'bodyweight', isCustom: false },
@@ -185,12 +186,12 @@ export async function seedSamplePlans(): Promise<void> {
         rest(0),
         { dayOfWeek: 1, isRest: false, label: 'Full Body Circuit A', exercises: [
           pe('Goblet Squat', 3, 15, 12, 'kg', 45), pe('Push-Ups', 3, 15, 0, 'bodyweight', 45),
-          pe('Lunges', 3, 12, 0, 'bodyweight', 45), pe('Dumbbell Row', 3, 12, 10, 'kg', 45),
+          pe('Lunges', 3, 12, 0, 'kg', 45), pe('Dumbbell Row', 3, 12, 10, 'kg', 45),
           pe('Burpees', 3, 10, 0, 'bodyweight', 60), pe('Running', 1, 1, 20, 'minutes', 0),
         ]},
         { dayOfWeek: 2, isRest: false, label: 'Cardio + Core', exercises: [
           pe('Jump Rope', 3, 1, 5, 'minutes', 60), pe('Crunches', 3, 20, 0, 'bodyweight', 45),
-          pe('Plank', 3, 1, 30, 'minutes', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
+          pe('Plank', 3, 1, 0.5, 'minutes', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
           pe('Running', 1, 1, 25, 'minutes', 0),
         ]},
         { dayOfWeek: 3, isRest: false, label: 'Full Body Circuit B', exercises: [
@@ -200,7 +201,7 @@ export async function seedSamplePlans(): Promise<void> {
         ]},
         { dayOfWeek: 4, isRest: false, label: 'HIIT + Core', exercises: [
           pe('HIIT Intervals', 6, 1, 1, 'minutes', 60), pe('Leg Raises', 3, 15, 0, 'bodyweight', 45),
-          pe('Crunches', 3, 20, 0, 'bodyweight', 45), pe('Plank', 3, 1, 40, 'minutes', 45),
+          pe('Crunches', 3, 20, 0, 'bodyweight', 45), pe('Plank', 3, 1, 0.5, 'minutes', 45),
           pe('Jump Rope', 3, 1, 3, 'minutes', 60),
         ]},
         { dayOfWeek: 5, isRest: false, label: 'Full Body Circuit C', exercises: [
@@ -257,24 +258,24 @@ export async function seedSamplePlans(): Promise<void> {
       weekTemplate: [
         rest(0),
         { dayOfWeek: 1, isRest: false, label: 'Core Basics A', exercises: [
-          pe('Crunches', 3, 20, 0, 'bodyweight', 45), pe('Plank', 3, 1, 30, 'minutes', 45),
+          pe('Crunches', 3, 20, 0, 'bodyweight', 45), pe('Plank', 3, 1, 0.5, 'minutes', 45),
           pe('Leg Raises', 3, 12, 0, 'bodyweight', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
         ]},
         { dayOfWeek: 2, isRest: false, label: 'Core + Cardio', exercises: [
           pe('Jump Rope', 3, 1, 5, 'minutes', 60), pe('Crunches', 3, 20, 0, 'bodyweight', 45),
-          pe('Plank', 3, 1, 30, 'minutes', 45), pe('Burpees', 2, 10, 0, 'bodyweight', 60),
+          pe('Plank', 3, 1, 0.5, 'minutes', 45), pe('Burpees', 2, 10, 0, 'bodyweight', 60),
         ]},
         { dayOfWeek: 3, isRest: false, label: 'Core Basics B', exercises: [
           pe('Leg Raises', 4, 15, 0, 'bodyweight', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
-          pe('Plank', 3, 1, 40, 'minutes', 45), pe('Crunches', 3, 25, 0, 'bodyweight', 45),
+          pe('Plank', 3, 1, 1, 'minutes', 45), pe('Crunches', 3, 25, 0, 'bodyweight', 45),
         ]},
         { dayOfWeek: 4, isRest: false, label: 'Core + Cardio', exercises: [
           pe('Running', 1, 1, 20, 'minutes', 0), pe('Crunches', 3, 20, 0, 'bodyweight', 45),
-          pe('Plank', 3, 1, 30, 'minutes', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
+          pe('Plank', 3, 1, 0.5, 'minutes', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
         ]},
         { dayOfWeek: 5, isRest: false, label: 'Core Basics C', exercises: [
           pe('Crunches', 4, 25, 0, 'bodyweight', 45), pe('Leg Raises', 4, 15, 0, 'bodyweight', 45),
-          pe('Plank', 4, 1, 45, 'minutes', 45), pe('Russian Twists', 4, 20, 0, 'bodyweight', 45),
+          pe('Plank', 4, 1, 1, 'minutes', 45), pe('Russian Twists', 4, 20, 0, 'bodyweight', 45),
           pe('Burpees', 2, 10, 0, 'bodyweight', 60),
         ]},
         rest(6),
@@ -292,7 +293,7 @@ export async function seedSamplePlans(): Promise<void> {
         { dayOfWeek: 1, isRest: false, label: 'Weighted Core A', exercises: [
           pe('Cable Crunch', 4, 15, 30, 'kg', 60), pe('Ab Wheel Rollout', 4, 12, 0, 'bodyweight', 60),
           pe('Leg Raises', 4, 15, 0, 'bodyweight', 45), pe('Russian Twists', 3, 20, 0, 'bodyweight', 45),
-          pe('Plank', 3, 1, 60, 'minutes', 45),
+          pe('Plank', 3, 1, 1, 'minutes', 45),
         ]},
         { dayOfWeek: 2, isRest: false, label: 'Core + HIIT', exercises: [
           pe('HIIT Intervals', 6, 1, 1, 'minutes', 60), pe('Ab Wheel Rollout', 3, 12, 0, 'bodyweight', 60),
@@ -300,17 +301,17 @@ export async function seedSamplePlans(): Promise<void> {
         ]},
         { dayOfWeek: 3, isRest: false, label: 'Weighted Core B', exercises: [
           pe('Cable Crunch', 4, 15, 35, 'kg', 60), pe('Leg Raises', 4, 20, 0, 'bodyweight', 45),
-          pe('Ab Wheel Rollout', 4, 15, 0, 'bodyweight', 60), pe('Plank', 3, 1, 75, 'minutes', 45),
+          pe('Ab Wheel Rollout', 4, 15, 0, 'bodyweight', 60), pe('Plank', 3, 1, 1.5, 'minutes', 45),
           pe('Russian Twists', 3, 30, 0, 'bodyweight', 45),
         ]},
         { dayOfWeek: 4, isRest: false, label: 'Core + Cardio', exercises: [
           pe('Running', 1, 1, 30, 'minutes', 0), pe('Cable Crunch', 3, 15, 30, 'kg', 60),
-          pe('Ab Wheel Rollout', 3, 12, 0, 'bodyweight', 60), pe('Plank', 3, 1, 60, 'minutes', 45),
+          pe('Ab Wheel Rollout', 3, 12, 0, 'bodyweight', 60), pe('Plank', 3, 1, 1, 'minutes', 45),
         ]},
         { dayOfWeek: 5, isRest: false, label: 'Full Core Blast', exercises: [
           pe('Cable Crunch', 5, 15, 35, 'kg', 60), pe('Ab Wheel Rollout', 5, 12, 0, 'bodyweight', 60),
           pe('Leg Raises', 4, 20, 0, 'bodyweight', 45), pe('Russian Twists', 4, 30, 0, 'bodyweight', 45),
-          pe('Plank', 4, 1, 75, 'minutes', 45), pe('HIIT Intervals', 4, 1, 1, 'minutes', 60),
+          pe('Plank', 4, 1, 1.5, 'minutes', 45), pe('HIIT Intervals', 4, 1, 1, 'minutes', 60),
         ]},
         rest(6),
       ],

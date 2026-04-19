@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell, Timer, X } from 'lucide-react'
@@ -12,7 +12,7 @@ import { useActivePlan } from '../hooks/useActivePlan'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import { db } from '../db'
-import type { WorkoutLog, ExerciseLog, SetLog } from '../db/types'
+import type { WorkoutLog, ExerciseLog, SetLog, WeightUnit } from '../db/types'
 import { getDayOfWeek, getTodayString, DAY_FULL_LABELS } from '../utils/dateHelpers'
 import { pct } from '../utils/calculations'
 import { playTimerSound } from '../utils/sound'
@@ -33,6 +33,14 @@ export default function Workout() {
   const todayDOW = getDayOfWeek()
   const todayPlan = activePlan?.weekTemplate.find((d) => d.dayOfWeek === todayDOW)
   const isRestDay = todayPlan?.isRest ?? false
+
+  const planUnitMap = useMemo(() => {
+    const map = new Map<string, WeightUnit>()
+    activePlan?.weekTemplate.forEach(day =>
+      day.exercises.forEach(ex => map.set(ex.exerciseId, ex.unit))
+    )
+    return map
+  }, [activePlan])
 
   // Always keep a ref to the latest workout so the sync effect can read it
   // without needing todayWorkout in its deps (which would cause a feedback loop:
@@ -260,6 +268,10 @@ export default function Workout() {
           const isExerciseLog = 'sets' in ex && ex.sets?.[0] && 'completed' in ex.sets[0]
           const exerciseKey = isExerciseLog ? ex.exerciseId : ex.exerciseId
           const isExpanded = expandedExercise === `${exerciseKey}-${exIdx}`
+          const exUnit: WeightUnit = isExerciseLog ? (planUnitMap.get(ex.exerciseId) ?? 'kg') : (ex.unit ?? 'kg')
+          const isTimeBased = exUnit === 'minutes' || exUnit === 'meters'
+          const isBodyweight = exUnit === 'bodyweight'
+          const durationColLabel = exUnit === 'minutes' ? 'MINS' : exUnit === 'meters' ? 'METERS' : exUnit.toUpperCase()
 
           return (
             <Card key={`${exerciseKey}-${exIdx}`} border className={isExerciseLog && ex.completed ? 'border-[#00FF87]/20' : ''}>
@@ -283,7 +295,11 @@ export default function Workout() {
                     </p>
                   ) : (
                     <p className="text-xs text-[#555555]">
-                      {ex.sets}×{ex.reps} @ {ex.weight}{ex.unit}
+                      {isTimeBased
+                        ? `${ex.sets} sets · ${ex.weight}${exUnit === 'minutes' ? 'min' : 'm'}`
+                        : isBodyweight
+                        ? `${ex.sets}×${ex.reps} reps`
+                        : `${ex.sets}×${ex.reps} @ ${ex.weight}${exUnit}`}
                     </p>
                   )}
                 </div>
@@ -294,16 +310,24 @@ export default function Workout() {
               {isExpanded && isExerciseLog && todayWorkout && (
                 <div className="mt-4 space-y-2">
                   {/* Header */}
-                  <div className="grid grid-cols-4 gap-2 px-1">
+                  <div className={`grid ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'} gap-2 px-1`}>
                     <p className="text-[10px] text-[#555555] text-center">SET</p>
                     <p className="text-[10px] text-[#555555] text-center">TARGET</p>
-                    <p className="text-[10px] text-[#555555] text-center">REPS</p>
-                    <p className="text-[10px] text-[#555555] text-center">WEIGHT</p>
+                    {isTimeBased ? (
+                      <p className="text-[10px] text-[#555555] text-center">{durationColLabel}</p>
+                    ) : isBodyweight ? (
+                      <p className="text-[10px] text-[#555555] text-center">REPS</p>
+                    ) : (
+                      <>
+                        <p className="text-[10px] text-[#555555] text-center">REPS</p>
+                        <p className="text-[10px] text-[#555555] text-center">WEIGHT</p>
+                      </>
+                    )}
                   </div>
                   {(ex as ExerciseLog).sets.map((set: SetLog, setIdx: number) => (
                     <div
                       key={setIdx}
-                      className={`grid grid-cols-4 gap-2 items-center p-2 rounded-xl transition-all ${
+                      className={`grid ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'} gap-2 items-center p-2 rounded-xl transition-all ${
                         set.completed ? 'bg-[#00FF87]/5' : 'bg-[#0D0D0D]'
                       }`}
                     >
@@ -317,22 +341,46 @@ export default function Workout() {
                         }
                       </button>
                       <p className="text-xs text-[#666666] text-center">
-                        {set.targetReps}×{set.targetWeight}
+                        {isTimeBased
+                          ? `${set.targetWeight}${exUnit === 'minutes' ? 'min' : 'm'}`
+                          : isBodyweight
+                          ? `${set.targetReps} reps`
+                          : `${set.targetReps}×${set.targetWeight}`}
                       </p>
-                      <input
-                        type="number"
-                        className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
-                        value={set.actualReps ?? ''}
-                        placeholder={String(set.targetReps)}
-                        onChange={(e) => updateSetValue(exIdx, setIdx, 'actualReps', parseInt(e.target.value) || 0)}
-                      />
-                      <input
-                        type="number"
-                        className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
-                        value={set.actualWeight ?? ''}
-                        placeholder={String(set.targetWeight)}
-                        onChange={(e) => updateSetValue(exIdx, setIdx, 'actualWeight', parseFloat(e.target.value) || 0)}
-                      />
+                      {isTimeBased ? (
+                        <input
+                          type="number"
+                          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
+                          value={set.actualWeight ?? ''}
+                          placeholder={String(set.targetWeight)}
+                          onChange={(e) => updateSetValue(exIdx, setIdx, 'actualWeight', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : isBodyweight ? (
+                        <input
+                          type="number"
+                          className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
+                          value={set.actualReps ?? ''}
+                          placeholder={String(set.targetReps)}
+                          onChange={(e) => updateSetValue(exIdx, setIdx, 'actualReps', parseInt(e.target.value) || 0)}
+                        />
+                      ) : (
+                        <>
+                          <input
+                            type="number"
+                            className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
+                            value={set.actualReps ?? ''}
+                            placeholder={String(set.targetReps)}
+                            onChange={(e) => updateSetValue(exIdx, setIdx, 'actualReps', parseInt(e.target.value) || 0)}
+                          />
+                          <input
+                            type="number"
+                            className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87] w-full"
+                            value={set.actualWeight ?? ''}
+                            placeholder={String(set.targetWeight)}
+                            onChange={(e) => updateSetValue(exIdx, setIdx, 'actualWeight', parseFloat(e.target.value) || 0)}
+                          />
+                        </>
+                      )}
                     </div>
                   ))}
 

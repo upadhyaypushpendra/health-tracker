@@ -300,44 +300,56 @@ export default function PlanBuilder() {
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        <div>
-                          <label className="text-[10px] text-[#555555] block mb-1">SETS</label>
-                          <input
-                            type="number"
-                            className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                            value={ex.sets}
-                            onChange={(e) => updateExercise(day.dayOfWeek, idx, { sets: parseInt(e.target.value) || 1 })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-[#555555] block mb-1">REPS</label>
-                          <input
-                            type="number"
-                            className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                            value={ex.reps}
-                            onChange={(e) => updateExercise(day.dayOfWeek, idx, { reps: parseInt(e.target.value) || 1 })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-[#555555] block mb-1">{ex.unit.toUpperCase()}</label>
-                          <input
-                            type="number"
-                            className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                            value={ex.weight}
-                            onChange={(e) => updateExercise(day.dayOfWeek, idx, { weight: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-[#555555] block mb-1">REST(s)</label>
-                          <input
-                            type="number"
-                            className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                            value={ex.restSeconds}
-                            onChange={(e) => updateExercise(day.dayOfWeek, idx, { restSeconds: parseInt(e.target.value) || 30 })}
-                          />
-                        </div>
-                      </div>
+                      {(() => {
+                        const exUnit = allExercises?.find(e => e.id === ex.exerciseId)?.unit ?? ex.unit
+                        const isTimeBased = exUnit === 'minutes' || exUnit === 'meters'
+                        const isBodyweight = exUnit === 'bodyweight'
+                        const durationLabel = exUnit === 'minutes' ? 'MINS' : exUnit === 'meters' ? 'METERS' : exUnit.toUpperCase()
+                        return (
+                          <div className={`grid gap-2 ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                            <div>
+                              <label className="text-[10px] text-[#555555] block mb-1">SETS</label>
+                              <input
+                                type="number"
+                                className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
+                                value={ex.sets}
+                                onChange={(e) => updateExercise(day.dayOfWeek, idx, { sets: parseInt(e.target.value) || 1 })}
+                              />
+                            </div>
+                            {!isTimeBased && (
+                              <div>
+                                <label className="text-[10px] text-[#555555] block mb-1">REPS</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
+                                  value={ex.reps}
+                                  onChange={(e) => updateExercise(day.dayOfWeek, idx, { reps: parseInt(e.target.value) || 1 })}
+                                />
+                              </div>
+                            )}
+                            {!isBodyweight && (
+                              <div>
+                                <label className="text-[10px] text-[#555555] block mb-1">{durationLabel}</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
+                                  value={ex.weight}
+                                  onChange={(e) => updateExercise(day.dayOfWeek, idx, { weight: parseFloat(e.target.value) || 0 })}
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <label className="text-[10px] text-[#555555] block mb-1">REST(s)</label>
+                              <input
+                                type="number"
+                                className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
+                                value={ex.restSeconds}
+                                onChange={(e) => updateExercise(day.dayOfWeek, idx, { restSeconds: parseInt(e.target.value) || 30 })}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </div>
                   ))}
 

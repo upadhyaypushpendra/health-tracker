@@ -190,37 +190,59 @@ export default function Progress() {
     if (!workoutLogs?.length || !activePlan) return []
 
     const planExerciseIds = new Set<string>()
+    const planUnitMap = new Map<string, string>()
     activePlan.weekTemplate.forEach(day =>
-      day.exercises.forEach(ex => planExerciseIds.add(ex.exerciseId))
+      day.exercises.forEach(ex => {
+        planExerciseIds.add(ex.exerciseId)
+        planUnitMap.set(ex.exerciseId, ex.unit)
+      })
     )
     if (!planExerciseIds.size) return []
 
-    const byExercise = new Map<string, Array<{ maxWeight: number }>>()
+    const byExercise = new Map<string, { values: number[]; unit: string }>()
 
     for (const log of [...workoutLogs].sort((a, b) => a.date.localeCompare(b.date))) {
       for (const ex of log.exercises) {
         if (!planExerciseIds.has(ex.exerciseId)) continue
-        const completedSets = ex.sets.filter(s => s.completed && (s.actualWeight ?? 0) > 0)
-        if (!completedSets.length) continue
-        const maxWeight = Math.max(...completedSets.map(s => s.actualWeight ?? 0))
-        const arr = byExercise.get(ex.name) ?? []
-        arr.push({ maxWeight })
-        byExercise.set(ex.name, arr)
+        const unit = planUnitMap.get(ex.exerciseId) ?? 'kg'
+        const isTimeBased = unit === 'minutes' || unit === 'meters'
+        const isBodyweight = unit === 'bodyweight'
+        const displayUnit = isBodyweight ? 'reps' : unit === 'minutes' ? 'min' : unit === 'meters' ? 'm' : weightUnit
+
+        let sessionValue: number
+        if (isBodyweight) {
+          const completedSets = ex.sets.filter(s => s.completed)
+          if (!completedSets.length) continue
+          sessionValue = completedSets.reduce((sum, s) => sum + (s.actualReps ?? s.targetReps ?? 0), 0)
+        } else if (isTimeBased) {
+          const completedSets = ex.sets.filter(s => s.completed)
+          if (!completedSets.length) continue
+          sessionValue = Math.max(...completedSets.map(s => s.actualWeight ?? s.targetWeight ?? 0))
+        } else {
+          const completedSets = ex.sets.filter(s => s.completed && (s.actualWeight ?? 0) > 0)
+          if (!completedSets.length) continue
+          sessionValue = Math.max(...completedSets.map(s => s.actualWeight ?? 0))
+        }
+
+        const entry = byExercise.get(ex.name)
+        if (entry) { entry.values.push(sessionValue) }
+        else { byExercise.set(ex.name, { values: [sessionValue], unit: displayUnit }) }
       }
     }
 
-    const progressions: { name: string; first: number; last: number; delta: number; pct: number }[] = []
-    for (const [name, entries] of byExercise) {
-      if (entries.length < 2) continue
-      const first = entries[0].maxWeight
-      const last = entries[entries.length - 1].maxWeight
+    const progressions: { name: string; first: number; last: number; delta: number; pct: number; unit: string }[] = []
+    for (const [name, { values, unit }] of byExercise) {
+      if (values.length < 2) continue
+      const first = values[0]
+      const last = values[values.length - 1]
+      if (first === 0) continue
       const delta = +(last - first).toFixed(1)
       const pct = Math.round((delta / first) * 100)
-      progressions.push({ name, first, last, delta, pct })
+      progressions.push({ name, first, last, delta, pct, unit })
     }
 
     return progressions.sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 5)
-  }, [workoutLogs, activePlan])
+  }, [workoutLogs, activePlan, weightUnit])
 
   return (
     <div className="pb-32">
@@ -338,12 +360,12 @@ export default function Progress() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white truncate">{ex.name}</p>
                       <p className="text-xs text-[#555555]">
-                        {ex.first}{weightUnit} → {ex.last}{weightUnit}
+                        {ex.first}{ex.unit} → {ex.last}{ex.unit}
                       </p>
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <p className={`text-base font-black ${ex.delta >= 0 ? 'text-[#00FF87]' : 'text-[#FF4757]'}`}>
-                        {ex.delta >= 0 ? '+' : ''}{ex.delta}{weightUnit}
+                        {ex.delta >= 0 ? '+' : ''}{ex.delta}{ex.unit}
                       </p>
                       <p className={`text-xs font-semibold ${ex.delta >= 0 ? 'text-[#00FF87]/60' : 'text-[#FF4757]/60'}`}>
                         {ex.pct >= 0 ? '+' : ''}{ex.pct}%
