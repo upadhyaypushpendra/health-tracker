@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Search, Plus, Trash2 } from 'lucide-react'
-import { v4 as uuid } from 'uuid'
+import { Search, Plus, Trash2, Pencil } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
-import Modal from '../components/ui/Modal'
-import Input from '../components/ui/Input'
-import Select from '../components/ui/Select'
+import ExerciseFormModal from '../components/exercise/ExerciseFormModal'
 import { db } from '../db'
-import type { Exercise, MuscleGroup, WeightUnit } from '../db/types'
+import type { Exercise, MuscleGroup } from '../db/types'
 
 const MUSCLE_GROUPS: { id: MuscleGroup | 'all'; label: string; emoji: string }[] = [
   { id: 'all', label: 'All', emoji: '🏋️' },
@@ -23,35 +20,11 @@ const MUSCLE_GROUPS: { id: MuscleGroup | 'all'; label: string; emoji: string }[]
   { id: 'full_body', label: 'Full Body', emoji: '⚡' },
 ]
 
-const UNIT_OPTIONS: { value: WeightUnit; label: string }[] = [
-  { value: 'kg', label: 'kg (weight)' },
-  { value: 'lbs', label: 'lbs (weight)' },
-  { value: 'bodyweight', label: 'Bodyweight' },
-  { value: 'minutes', label: 'Minutes (time)' },
-  { value: 'meters', label: 'Meters (distance)' },
-]
-
-const MUSCLE_OPTIONS = MUSCLE_GROUPS.filter((g) => g.id !== 'all').map((g) => ({
-  value: g.id as string,
-  label: `${g.emoji} ${g.label}`,
-}))
-
-const EMPTY_FORM = {
-  name: '',
-  muscleGroup: 'chest' as MuscleGroup,
-  defaultSets: '3',
-  defaultReps: '10',
-  defaultWeight: '0',
-  unit: 'kg' as WeightUnit,
-  description: '',
-}
-
 export default function Library() {
   const [filter, setFilter] = useState<MuscleGroup | 'all'>('all')
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [error, setError] = useState('')
+  const [editingExercise, setEditingExercise] = useState<Exercise | undefined>(undefined)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), [])
 
@@ -61,43 +34,17 @@ export default function Library() {
     return matchesMuscle && matchesSearch
   })
 
-  const handleAdd = async () => {
-    if (!form.name.trim()) {
-      setError('Exercise name is required')
-      return
-    }
-    const exists = exercises?.some(
-      (e) => e.name.toLowerCase() === form.name.trim().toLowerCase()
-    )
-    if (exists) {
-      setError('An exercise with this name already exists')
-      return
-    }
-
-    const exercise: Exercise = {
-      id: uuid(),
-      name: form.name.trim(),
-      muscleGroup: form.muscleGroup,
-      defaultSets: parseInt(form.defaultSets) || 3,
-      defaultReps: parseInt(form.defaultReps) || 10,
-      defaultWeight: parseFloat(form.defaultWeight) || 0,
-      unit: form.unit,
-      isCustom: true,
-      description: form.description.trim() || undefined,
-    }
-    await db.exercises.put(exercise)
-    setForm(EMPTY_FORM)
-    setError('')
-    setShowModal(false)
-  }
-
   const handleDelete = async (id: string) => {
     await db.exercises.delete(id)
   }
 
-  const openModal = () => {
-    setForm(EMPTY_FORM)
-    setError('')
+  const openAdd = () => {
+    setEditingExercise(undefined)
+    setShowModal(true)
+  }
+
+  const openEdit = (ex: Exercise) => {
+    setEditingExercise(ex)
     setShowModal(true)
   }
 
@@ -107,7 +54,7 @@ export default function Library() {
         title="Exercise Library"
         subtitle={`${exercises?.length ?? 0} exercises`}
         right={
-          <Button size="sm" icon={<Plus size={14} />} onClick={openModal}>
+          <Button size="sm" icon={<Plus size={14} />} onClick={openAdd}>
             New
           </Button>
         }
@@ -169,6 +116,12 @@ export default function Library() {
                         Custom
                       </span>
                       <button
+                        className="p-1.5 rounded-lg text-[#A0A0A0] hover:text-[#00FF87] hover:bg-[#00FF87]/10 transition-all"
+                        onClick={() => openEdit(ex)}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
                         className="p-1.5 rounded-lg text-[#FF4757]/50 hover:text-[#FF4757] hover:bg-[#FF4757]/10 transition-all"
                         onClick={() => handleDelete(ex.id)}
                       >
@@ -185,7 +138,7 @@ export default function Library() {
             <div className="py-12 text-center space-y-3">
               <p className="text-[#555555] text-sm">No exercises found</p>
               {search && (
-                <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={openModal}>
+                <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={openAdd}>
                   Create "{search}"
                 </Button>
               )}
@@ -194,69 +147,14 @@ export default function Library() {
         </div>
       </div>
 
-      {/* Add Exercise Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Exercise">
-        <div className="space-y-4">
-          <Input
-            label="Exercise Name"
-            placeholder="e.g. Reverse Curl, Face Pull"
-            value={form.name}
-            onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); setError('') }}
-            error={error}
-            autoFocus
-          />
-
-          <Select
-            label="Muscle Group"
-            options={MUSCLE_OPTIONS}
-            value={form.muscleGroup}
-            onChange={(e) => setForm((f) => ({ ...f, muscleGroup: e.target.value as MuscleGroup }))}
-          />
-
-          <Select
-            label="Unit"
-            options={UNIT_OPTIONS}
-            value={form.unit}
-            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value as WeightUnit }))}
-          />
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="Sets"
-              type="number"
-              placeholder="3"
-              value={form.defaultSets}
-              onChange={(e) => setForm((f) => ({ ...f, defaultSets: e.target.value }))}
-            />
-            <Input
-              label="Reps"
-              type="number"
-              placeholder="10"
-              value={form.defaultReps}
-              onChange={(e) => setForm((f) => ({ ...f, defaultReps: e.target.value }))}
-            />
-            <Input
-              label={form.unit === 'bodyweight' ? 'N/A' : form.unit.toUpperCase()}
-              type="number"
-              placeholder="0"
-              value={form.defaultWeight}
-              onChange={(e) => setForm((f) => ({ ...f, defaultWeight: e.target.value }))}
-              disabled={form.unit === 'bodyweight'}
-            />
-          </div>
-
-          <Input
-            label="Description (optional)"
-            placeholder="Notes on form, variation, etc."
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          />
-
-          <Button fullWidth size="lg" onClick={handleAdd} disabled={!form.name.trim()}>
-            Add to Library
-          </Button>
-        </div>
-      </Modal>
+      <ExerciseFormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSaved={() => setShowModal(false)}
+        exercise={editingExercise}
+        initialName={editingExercise ? undefined : search}
+        submitLabel={editingExercise ? 'Save Changes' : 'Add to Library'}
+      />
     </div>
   )
 }

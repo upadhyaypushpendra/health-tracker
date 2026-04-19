@@ -13,7 +13,7 @@ import { useActivePlan } from '../hooks/useActivePlan'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
 import { useRestTimer } from '../hooks/useRestTimer'
 import { db } from '../db'
-import type { WorkoutLog, ExerciseLog, SetLog, WeightUnit } from '../db/types'
+import type { WorkoutLog, ExerciseLog, SetLog, ExerciseUnit } from '../db/types'
 import { getDayOfWeek, getTodayString, DAY_FULL_LABELS } from '../utils/dateHelpers'
 import { pct } from '../utils/calculations'
 import { playTimerSound } from '../utils/sound'
@@ -36,7 +36,7 @@ export default function Workout() {
   const isRestDay = todayPlan?.isRest ?? false
 
   const planUnitMap = useMemo(() => {
-    const map = new Map<string, WeightUnit>()
+    const map = new Map<string, ExerciseUnit>()
     activePlan?.weekTemplate.forEach(day =>
       day.exercises.forEach(ex => map.set(ex.exerciseId, ex.unit))
     )
@@ -284,7 +284,7 @@ export default function Workout() {
           const isExerciseLog = 'sets' in ex && ex.sets?.[0] && 'completed' in ex.sets[0]
           const exerciseKey = isExerciseLog ? ex.exerciseId : ex.exerciseId
           const isExpanded = expandedExercise === `${exerciseKey}-${exIdx}`
-          const exUnit: WeightUnit = isExerciseLog ? (planUnitMap.get(ex.exerciseId) ?? 'kg') : (ex.unit ?? 'kg')
+          const exUnit: ExerciseUnit = isExerciseLog ? (planUnitMap.get(ex.exerciseId) ?? 'kg') : (ex.unit ?? 'kg')
           const isTimeBased = exUnit === 'minutes' || exUnit === 'meters'
           const isBodyweight = exUnit === 'bodyweight'
           const durationColLabel = exUnit === 'minutes' ? 'MINS' : exUnit === 'meters' ? 'METERS' : exUnit.toUpperCase()

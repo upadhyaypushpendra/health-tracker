@@ -1,37 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, RefreshCw, Pencil } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
-import Select from '../components/ui/Select'
+import ExerciseFormModal from '../components/exercise/ExerciseFormModal'
+import PlannedExerciseInputs from '../components/exercise/PlannedExerciseInputs'
 import { db } from '../db'
-import type { Plan, DayPlan, PlannedExercise, MuscleGroup, WeightUnit, Exercise } from '../db/types'
+import type { Plan, DayPlan, PlannedExercise, MuscleGroup, Exercise } from '../db/types'
 import { DAY_FULL_LABELS } from '../utils/dateHelpers'
 
 const MUSCLE_GROUPS: MuscleGroup[] = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio', 'full_body']
 const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   chest: 'Chest', back: 'Back', shoulders: 'Shoulders', arms: 'Arms',
   legs: 'Legs', core: 'Core', cardio: 'Cardio', full_body: 'Full Body',
-}
-
-const UNIT_OPTIONS: { value: WeightUnit; label: string }[] = [
-  { value: 'kg', label: 'kg' },
-  { value: 'lbs', label: 'lbs' },
-  { value: 'bodyweight', label: 'Bodyweight' },
-  { value: 'minutes', label: 'Minutes' },
-  { value: 'meters', label: 'Meters' },
-]
-
-const MUSCLE_SELECT_OPTIONS = MUSCLE_GROUPS.map((g) => ({ value: g, label: MUSCLE_LABELS[g] }))
-
-const EMPTY_NEW_EXERCISE = {
-  name: '', muscleGroup: 'chest' as MuscleGroup, unit: 'kg' as WeightUnit,
-  defaultSets: '3', defaultReps: '10', defaultWeight: '0',
 }
 
 function makeEmptyWeek(): DayPlan[] {
@@ -54,14 +40,13 @@ export default function PlanBuilder() {
   const [calorieTarget, setCalorieTarget] = useState('2000')
   const [waterTarget, setWaterTarget] = useState('3000')
   const [weekTemplate, setWeekTemplate] = useState<DayPlan[]>(makeEmptyWeek())
-  const [expandedDay, setExpandedDay] = useState<number | null>(1) // Monday expanded by default
-  const [showExercisePicker, setShowExercisePicker] = useState<number | null>(null) // dayOfWeek
-  const [replaceIndex, setReplaceIndex] = useState<number | null>(null) // exercise index to replace (null = append)
+  const [expandedDay, setExpandedDay] = useState<number | null>(1)
+  const [showExercisePicker, setShowExercisePicker] = useState<number | null>(null)
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null)
   const [exerciseFilter, setExerciseFilter] = useState<MuscleGroup | 'all'>('all')
   const [exerciseSearch, setExerciseSearch] = useState('')
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newExercise, setNewExercise] = useState(EMPTY_NEW_EXERCISE)
-  const [createError, setCreateError] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingExercise, setEditingExercise] = useState<Exercise | undefined>(undefined)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -95,7 +80,6 @@ export default function PlanBuilder() {
       prev.map((d) => {
         if (d.dayOfWeek !== dayOfWeek) return d
         if (replaceIndex !== null) {
-          // Preserve existing sets/reps/weight from the exercise being replaced
           const existing = d.exercises[replaceIndex]
           const replaced = { ...planned, sets: existing.sets, reps: existing.reps, weight: existing.weight }
           const updated = [...d.exercises]
@@ -114,7 +98,6 @@ export default function PlanBuilder() {
     setShowExercisePicker(dayOfWeek)
     setExerciseSearch('')
     setExerciseFilter('all')
-    setShowCreateForm(false)
   }
 
   const removeExercise = (dayOfWeek: number, idx: number) => {
@@ -127,43 +110,12 @@ export default function PlanBuilder() {
     )
   }
 
-  const updateExercise = (dayOfWeek: number, idx: number, patch: Partial<PlannedExercise>) => {
-    setWeekTemplate((prev) =>
-      prev.map((d) =>
-        d.dayOfWeek === dayOfWeek
-          ? { ...d, exercises: d.exercises.map((e, i) => (i === idx ? { ...e, ...patch } : e)) }
-          : d,
-      ),
-    )
-  }
 
-  const handleCreateExercise = async () => {
-    if (!newExercise.name.trim()) { setCreateError('Name is required'); return }
-    const duplicate = allExercises?.some(
-      (e) => e.name.toLowerCase() === newExercise.name.trim().toLowerCase()
-    )
-    if (duplicate) { setCreateError('An exercise with this name already exists'); return }
-
-    const exercise: Exercise = {
-      id: uuid(),
-      name: newExercise.name.trim(),
-      muscleGroup: newExercise.muscleGroup,
-      unit: newExercise.unit,
-      defaultSets: parseInt(newExercise.defaultSets) || 3,
-      defaultReps: parseInt(newExercise.defaultReps) || 10,
-      defaultWeight: parseFloat(newExercise.defaultWeight) || 0,
-      isCustom: true,
-    }
-    await db.exercises.put(exercise)
-
-    // Immediately add to the current day
+  const handleExerciseSaved = (exercise: Exercise) => {
     if (showExercisePicker !== null) {
       addExercise(showExercisePicker, exercise)
     }
-
-    setNewExercise(EMPTY_NEW_EXERCISE)
-    setCreateError('')
-    setShowCreateForm(false)
+    setShowCreateModal(false)
   }
 
   const handleSave = async () => {
@@ -197,8 +149,8 @@ export default function PlanBuilder() {
   return (
     <div className="pb-32">
       <PageHeader
+        back
         title={isEdit ? 'Edit Plan' : 'New Plan'}
-        back="/plan"
         right={
           <Button size="sm" onClick={handleSave} disabled={!name.trim() || saving}>
             {saving ? 'Saving…' : 'Save Plan'}
@@ -287,6 +239,13 @@ export default function PlanBuilder() {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             className="p-1.5 rounded-lg text-[#A0A0A0] hover:text-[#00FF87] hover:bg-[#00FF87]/10 transition-all"
+                            title="Edit exercise"
+                            onClick={() => setEditingExercise(allExercises?.find(e => e.id === ex.exerciseId))}
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg text-[#A0A0A0] hover:text-[#00FF87] hover:bg-[#00FF87]/10 transition-all"
                             title="Replace exercise"
                             onClick={() => openReplace(day.dayOfWeek, idx)}
                           >
@@ -300,56 +259,10 @@ export default function PlanBuilder() {
                           </button>
                         </div>
                       </div>
-                      {(() => {
-                        const exUnit = allExercises?.find(e => e.id === ex.exerciseId)?.unit ?? ex.unit
-                        const isTimeBased = exUnit === 'minutes' || exUnit === 'meters'
-                        const isBodyweight = exUnit === 'bodyweight'
-                        const durationLabel = exUnit === 'minutes' ? 'MINS' : exUnit === 'meters' ? 'METERS' : exUnit.toUpperCase()
-                        return (
-                          <div className={`grid gap-2 ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                            <div>
-                              <label className="text-[10px] text-[#555555] block mb-1">SETS</label>
-                              <input
-                                type="number"
-                                className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                                value={ex.sets}
-                                onChange={(e) => updateExercise(day.dayOfWeek, idx, { sets: parseInt(e.target.value) || 1 })}
-                              />
-                            </div>
-                            {!isTimeBased && (
-                              <div>
-                                <label className="text-[10px] text-[#555555] block mb-1">REPS</label>
-                                <input
-                                  type="number"
-                                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                                  value={ex.reps}
-                                  onChange={(e) => updateExercise(day.dayOfWeek, idx, { reps: parseInt(e.target.value) || 1 })}
-                                />
-                              </div>
-                            )}
-                            {!isBodyweight && (
-                              <div>
-                                <label className="text-[10px] text-[#555555] block mb-1">{durationLabel}</label>
-                                <input
-                                  type="number"
-                                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                                  value={ex.weight}
-                                  onChange={(e) => updateExercise(day.dayOfWeek, idx, { weight: parseFloat(e.target.value) || 0 })}
-                                />
-                              </div>
-                            )}
-                            <div>
-                              <label className="text-[10px] text-[#555555] block mb-1">REST(s)</label>
-                              <input
-                                type="number"
-                                className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-sm text-white text-center outline-none focus:border-[#00FF87]"
-                                value={ex.restSeconds}
-                                onChange={(e) => updateExercise(day.dayOfWeek, idx, { restSeconds: parseInt(e.target.value) || 30 })}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })()}
+                      <PlannedExerciseInputs
+                        exercise={ex}
+                        unit={allExercises?.find(e => e.id === ex.exerciseId)?.unit ?? ex.unit}
+                      />
                     </div>
                   ))}
 
@@ -371,164 +284,110 @@ export default function PlanBuilder() {
 
       {/* Exercise Picker Modal */}
       <Modal
-        isOpen={showExercisePicker !== null}
-        onClose={() => { setShowExercisePicker(null); setReplaceIndex(null); setShowCreateForm(false); setNewExercise(EMPTY_NEW_EXERCISE); setCreateError('') }}
-        title={showCreateForm ? 'Create Exercise' : replaceIndex !== null ? 'Replace Exercise' : 'Add Exercise'}
+        isOpen={showExercisePicker !== null && !showCreateModal}
+        onClose={() => { setShowExercisePicker(null); setReplaceIndex(null) }}
+        title={replaceIndex !== null ? 'Replace Exercise' : 'Add Exercise'}
         fullHeight
       >
-        {showCreateForm ? (
-          /* ── Inline create form ──────────────────────────────────── */
-          <div className="space-y-4">
-            <button
-              className="flex items-center gap-1.5 text-xs text-[#666666] hover:text-white transition-colors mb-2"
-              onClick={() => { setShowCreateForm(false); setCreateError('') }}
-            >
-              ← Back to library
-            </button>
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Search exercises…"
+            className="w-full bg-[#0D0D0D] border border-[#2A2A2A] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#444444] outline-none focus:border-[#00FF87]"
+            value={exerciseSearch}
+            onChange={(e) => setExerciseSearch(e.target.value)}
+            autoFocus
+          />
 
-            <Input
-              label="Exercise Name"
-              placeholder="e.g. Reverse Curl, Nordic Curl"
-              value={newExercise.name}
-              onChange={(e) => { setNewExercise((f) => ({ ...f, name: e.target.value })); setCreateError('') }}
-              error={createError}
-              autoFocus
-            />
-
-            <Select
-              label="Muscle Group"
-              options={MUSCLE_SELECT_OPTIONS}
-              value={newExercise.muscleGroup}
-              onChange={(e) => setNewExercise((f) => ({ ...f, muscleGroup: e.target.value as MuscleGroup }))}
-            />
-
-            <Select
-              label="Unit"
-              options={UNIT_OPTIONS}
-              value={newExercise.unit}
-              onChange={(e) => setNewExercise((f) => ({ ...f, unit: e.target.value as WeightUnit }))}
-            />
-
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                label="Sets"
-                type="number"
-                placeholder="3"
-                value={newExercise.defaultSets}
-                onChange={(e) => setNewExercise((f) => ({ ...f, defaultSets: e.target.value }))}
-              />
-              <Input
-                label="Reps"
-                type="number"
-                placeholder="10"
-                value={newExercise.defaultReps}
-                onChange={(e) => setNewExercise((f) => ({ ...f, defaultReps: e.target.value }))}
-              />
-              <Input
-                label={newExercise.unit === 'bodyweight' ? 'N/A' : newExercise.unit.toUpperCase()}
-                type="number"
-                placeholder="0"
-                value={newExercise.defaultWeight}
-                onChange={(e) => setNewExercise((f) => ({ ...f, defaultWeight: e.target.value }))}
-                disabled={newExercise.unit === 'bodyweight'}
-              />
-            </div>
-
-            <Button fullWidth size="lg" onClick={handleCreateExercise} disabled={!newExercise.name.trim()}>
-              Create & Add to Plan
-            </Button>
+          {/* Muscle group filter */}
+          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {(['all', ...MUSCLE_GROUPS] as const).map((g) => (
+              <button
+                key={g}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full transition-all ${
+                  exerciseFilter === g
+                    ? 'bg-[#00FF87] text-[#0D0D0D] font-bold'
+                    : 'bg-[#2A2A2A] text-[#A0A0A0]'
+                }`}
+                onClick={() => setExerciseFilter(g)}
+              >
+                {g === 'all' ? 'All' : MUSCLE_LABELS[g]}
+              </button>
+            ))}
           </div>
-        ) : (
-          /* ── Exercise picker list ────────────────────────────────── */
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Search exercises…"
-              className="w-full bg-[#0D0D0D] border border-[#2A2A2A] rounded-xl px-4 py-3 text-sm text-white placeholder:text-[#444444] outline-none focus:border-[#00FF87]"
-              value={exerciseSearch}
-              onChange={(e) => setExerciseSearch(e.target.value)}
-              autoFocus
-            />
 
-            {/* Muscle group filter */}
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-              {(['all', ...MUSCLE_GROUPS] as const).map((g) => (
-                <button
-                  key={g}
-                  className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full transition-all ${
-                    exerciseFilter === g
-                      ? 'bg-[#00FF87] text-[#0D0D0D] font-bold'
-                      : 'bg-[#2A2A2A] text-[#A0A0A0]'
-                  }`}
-                  onClick={() => setExerciseFilter(g)}
-                >
-                  {g === 'all' ? 'All' : MUSCLE_LABELS[g]}
-                </button>
-              ))}
+          {/* Create new shortcut */}
+          <button
+            className="w-full flex items-center gap-3 p-3 border border-dashed border-[#3A3A3A] hover:border-[#00FF87]/40 rounded-xl transition-all group"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <div className="w-8 h-8 bg-[#00FF87]/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-[#00FF87]/20 transition-all">
+              <Plus size={16} className="text-[#00FF87]" />
             </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-[#00FF87]">
+                {exerciseSearch ? `Create "${exerciseSearch}"` : 'Create new exercise'}
+              </p>
+              <p className="text-xs text-[#555555]">Add a custom exercise to your library</p>
+            </div>
+          </button>
 
-            {/* Create new shortcut */}
-            <button
-              className="w-full flex items-center gap-3 p-3 border border-dashed border-[#3A3A3A] hover:border-[#00FF87]/40 rounded-xl transition-all group"
-              onClick={() => {
-                setShowCreateForm(true)
-                if (exerciseSearch) setNewExercise((f) => ({ ...f, name: exerciseSearch }))
-              }}
-            >
-              <div className="w-8 h-8 bg-[#00FF87]/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-[#00FF87]/20 transition-all">
-                <Plus size={16} className="text-[#00FF87]" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-[#00FF87]">
-                  {exerciseSearch ? `Create "${exerciseSearch}"` : 'Create new exercise'}
-                </p>
-                <p className="text-xs text-[#555555]">Add a custom exercise to your library</p>
-              </div>
-            </button>
-
-            {/* Exercise list */}
-            <div className="space-y-2">
-              {filteredExercises?.map((ex) => (
-                <button
-                  key={ex.id}
-                  className="w-full flex items-center justify-between p-3 bg-[#0D0D0D] rounded-xl hover:bg-[#111111] transition-all text-left"
-                  onClick={() => showExercisePicker !== null && addExercise(showExercisePicker, ex)}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-white">{ex.name}</p>
-                    <p className="text-xs text-[#555555]">
-                      {ex.defaultSets}×{ex.defaultReps} · {ex.defaultWeight}{ex.unit}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {ex.isCustom && (
-                      <span className="text-[10px] bg-[#FF6B35]/15 text-[#FF6B35] px-2 py-0.5 rounded-md">Custom</span>
-                    )}
-                    <span className="text-[10px] bg-[#2A2A2A] text-[#A0A0A0] px-2 py-1 rounded-lg capitalize">
-                      {MUSCLE_LABELS[ex.muscleGroup]}
-                    </span>
-                  </div>
-                </button>
-              ))}
-
-              {filteredExercises?.length === 0 && (
-                <div className="py-8 text-center">
-                  <p className="text-[#555555] text-sm mb-3">No exercises found</p>
-                  <button
-                    className="text-sm text-[#00FF87] font-semibold"
-                    onClick={() => {
-                      setShowCreateForm(true)
-                      if (exerciseSearch) setNewExercise((f) => ({ ...f, name: exerciseSearch }))
-                    }}
-                  >
-                    + Create "{exerciseSearch}"
-                  </button>
+          {/* Exercise list */}
+          <div className="space-y-2">
+            {filteredExercises?.map((ex) => (
+              <button
+                key={ex.id}
+                className="w-full flex items-center justify-between p-3 bg-[#0D0D0D] rounded-xl hover:bg-[#111111] transition-all text-left"
+                onClick={() => showExercisePicker !== null && addExercise(showExercisePicker, ex)}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">{ex.name}</p>
+                  <p className="text-xs text-[#555555]">
+                    {ex.defaultSets}×{ex.defaultReps} · {ex.defaultWeight}{ex.unit}
+                  </p>
                 </div>
-              )}
-            </div>
+                <div className="flex items-center gap-2">
+                  {ex.isCustom && (
+                    <span className="text-[10px] bg-[#FF6B35]/15 text-[#FF6B35] px-2 py-0.5 rounded-md">Custom</span>
+                  )}
+                  <span className="text-[10px] bg-[#2A2A2A] text-[#A0A0A0] px-2 py-1 rounded-lg capitalize">
+                    {MUSCLE_LABELS[ex.muscleGroup]}
+                  </span>
+                </div>
+              </button>
+            ))}
+
+            {filteredExercises?.length === 0 && (
+              <div className="py-8 text-center">
+                <p className="text-[#555555] text-sm mb-3">No exercises found</p>
+                <button
+                  className="text-sm text-[#00FF87] font-semibold"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  + Create "{exerciseSearch}"
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </Modal>
+
+      {/* Create Exercise Modal */}
+      <ExerciseFormModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSaved={handleExerciseSaved}
+        initialName={exerciseSearch}
+        submitLabel="Create & Add to Plan"
+      />
+
+      {/* Edit Exercise Modal */}
+      <ExerciseFormModal
+        isOpen={editingExercise !== undefined}
+        onClose={() => setEditingExercise(undefined)}
+        onSaved={() => setEditingExercise(undefined)}
+        exercise={editingExercise}
+      />
     </div>
   )
 }

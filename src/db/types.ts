@@ -10,7 +10,7 @@ export type MuscleGroup =
   | 'cardio'
   | 'full_body'
 
-export type WeightUnit = 'kg' | 'lbs' | 'bodyweight' | 'minutes' | 'meters'
+export type ExerciseUnit = 'kg' | 'lbs' | 'bodyweight' | 'minutes' | 'meters'
 
 export interface Exercise {
   id: string
@@ -19,7 +19,7 @@ export interface Exercise {
   defaultSets: number
   defaultReps: number
   defaultWeight: number
-  unit: WeightUnit
+  unit: ExerciseUnit
   isCustom: boolean
   description?: string
 }
@@ -41,7 +41,7 @@ export interface PlannedExercise {
   sets: number
   reps: number
   weight: number
-  unit: WeightUnit
+  unit: ExerciseUnit
   restSeconds: number
 }
 
