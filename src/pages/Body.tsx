@@ -59,6 +59,7 @@ export default function Body() {
   return (
     <div className="pb-32">
       <PageHeader
+        back
         title="Body Metrics"
         subtitle="Weight & composition tracking"
         right={

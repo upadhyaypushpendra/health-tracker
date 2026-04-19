@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { subDays, format, parseISO, eachDayOfInterval } from 'date-fns'
 import PageHeader from '../components/layout/PageHeader'
@@ -21,6 +22,7 @@ const BodyTrendChart = lazy(() =>
 type Range = '7d' | '14d' | '30d'
 
 export default function Progress() {
+  const navigate = useNavigate()
   const [range, setRange] = useState<Range>('7d')
   const activePlan = useActivePlan()
   const settings = useLiveQuery(() => getSettings())
@@ -370,7 +372,12 @@ export default function Progress() {
         {weightChartData.length >= 1 && (
           <Suspense fallback={<div className="h-44 bg-[#2A2A2A] rounded-2xl animate-pulse" />}>
             <Card border>
-              <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider mb-4">⚖️ Weight</p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold text-[#555555] uppercase tracking-wider">⚖️ Weight</p>
+                <button onClick={() => navigate('/body')} className="text-[10px] font-semibold text-[#00FF87] uppercase tracking-wider">
+                  View Details →
+                </button>
+              </div>
               <BodyTrendChart data={weightChartData} goalWeight={activePlan?.weightGoal ?? null} />
             </Card>
           </Suspense>
