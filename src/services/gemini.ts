@@ -54,7 +54,7 @@ export async function streamChat(
   const response = await fetch(`${WORKER_URL}?stream`, {
     method: "POST",
     headers: await buildHeaders(),
-    body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 8192 } }),
+    body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 88192 } }),
     signal,
   });
 
@@ -102,7 +102,10 @@ interface GeminiPart {
   thought?: boolean;
 }
 interface GeminiResponse {
-  candidates?: Array<{ content?: { parts?: GeminiPart[] } }>;
+  candidates?: Array<{
+    content?: { parts?: GeminiPart[] };
+    finishReason?: string;
+  }>;
 }
 
 export async function chat(
@@ -114,40 +117,52 @@ export async function chat(
     parts: [{ text: m.content }],
   }));
 
-  const response = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: await buildHeaders(),
-    body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 8192 } }),
-    signal,
-  });
+  let fullText = "";
 
-  const rawText = await response.text();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: await buildHeaders(),
+      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 88192 } }),
+      signal,
+    });
 
-  saveModelIndex(response);
+    const rawText = await response.text();
 
-  if (!response.ok) {
-    console.error("[chat] error", response.status, rawText.slice(0, 300));
-    throw new Error(`Worker returned ${response.status}: ${rawText.slice(0, 150)}`);
+    saveModelIndex(response);
+
+    if (!response.ok) {
+      console.error("[chat] error", response.status, rawText.slice(0, 300));
+      throw new Error(`Worker returned ${response.status}: ${rawText.slice(0, 150)}`);
+    }
+
+    let data: GeminiResponse;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      console.error("[chat] JSON parse failed:", rawText.slice(0, 300));
+      throw new Error("Response was not valid JSON — check Worker endpoint config.");
+    }
+
+    const candidate = data.candidates?.[0];
+    const chunk =
+      candidate?.content?.parts
+        ?.filter((p) => !p.thought && p.text)
+        ?.map((p) => p.text ?? "")
+        .join("") ?? "";
+
+    fullText += chunk;
+
+    if (candidate?.finishReason !== "MAX_TOKENS") break;
+
+    // Continuation: append what the model produced so far, then ask it to continue
+    contents.push({ role: "model", parts: [{ text: chunk }] });
+    contents.push({ role: "user", parts: [{ text: "Continue exactly from where you left off. Do not repeat any content." }] });
   }
 
-  let data: GeminiResponse;
-  try {
-    data = JSON.parse(rawText);
-  } catch {
-    console.error("[chat] JSON parse failed:", rawText.slice(0, 300));
-    throw new Error("Response was not valid JSON — check Worker endpoint config.");
-  }
-
-  const text =
-    data.candidates?.[0]?.content?.parts
-      ?.filter((p) => !p.thought && p.text)
-      ?.map((p) => p.text ?? "")
-      .join("") ?? "";
-
-  if (!text) {
-    console.error("[chat] empty text, full response:", rawText.slice(0, 500));
+  if (!fullText) {
     throw new Error("Gemini returned no text.");
   }
 
-  return text;
+  return fullText;
 }

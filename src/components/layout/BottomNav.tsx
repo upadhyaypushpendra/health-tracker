@@ -1,8 +1,8 @@
-import { Dumbbell, LayoutDashboard, TrendingUp, Utensils, Settings } from 'lucide-react';
+import { Dumbbell, Home, TrendingUp, Utensils, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/', icon: Home, label: 'Home' },
   { to: '/workout', icon: Dumbbell, label: 'Workout' },
   { to: '/nutrition', icon: Utensils, label: 'Nutrition' },
   { to: '/progress', icon: TrendingUp, label: 'Progress' },

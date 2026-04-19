@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell, Timer, X } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell, Timer, X, Pencil } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import ProgressBar from '../components/ui/ProgressBar'
 import ProgressRing from '../components/ui/ProgressRing'
 import EmptyState from '../components/ui/EmptyState'
+import HealthTips from '../components/ui/HealthTips'
 import { useActivePlan } from '../hooks/useActivePlan'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
 import { useRestTimer } from '../hooks/useRestTimer'
@@ -204,7 +205,7 @@ export default function Workout() {
   if (!activePlan) {
     return (
       <div className="pb-24">
-        <PageHeader title="Workout" subtitle={DAY_FULL_LABELS[todayDOW]} />
+        <PageHeader title="Workout" subtitle={DAY_FULL_LABELS[todayDOW]} back />
         <EmptyState
           icon={<Dumbbell size={48} className="text-[#2A2A2A]" />}
           title="No active plan"
@@ -218,12 +219,22 @@ export default function Workout() {
   if (isRestDay) {
     return (
       <div className="pb-24">
-        <PageHeader title="Workout" subtitle={DAY_FULL_LABELS[todayDOW]} />
-        <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+        <PageHeader
+          back
+          title="Workout"
+          subtitle={DAY_FULL_LABELS[todayDOW]}
+          right={
+            <Button variant="primary" size="sm" icon={<Pencil size={14} />} onClick={() => navigate(`/plan/${activePlan.id}/edit`)}>
+              Edit Plan
+            </Button>
+          }
+        />
+        <div className="flex flex-col items-center justify-center py-12 px-8 text-center">
           <div className="text-6xl mb-4">😴</div>
           <h2 className="text-xl font-black text-white mb-2">Rest Day</h2>
-          <p className="text-[#666666] text-sm max-w-xs">Recovery is part of the plan. Take it easy today and come back stronger tomorrow.</p>
+          <p className="text-[#666666] text-sm max-w-xs mb-8">Recovery is part of the plan. Take it easy today and come back stronger tomorrow.</p>
         </div>
+        <HealthTips />
       </div>
     )
   }
@@ -234,6 +245,11 @@ export default function Workout() {
         title="Today's Workout"
         subtitle={`${activePlan.name} · ${DAY_FULL_LABELS[todayDOW]}`}
         back
+        right={
+          <Button variant="primary" size="sm" icon={<Pencil size={14} />} onClick={() => navigate(`/plan/${activePlan.id}/edit`)}>
+            Edit Plan
+          </Button>
+        }
       />
 
       <div className="px-4 space-y-4">
@@ -279,9 +295,8 @@ export default function Workout() {
                 className="w-full flex items-center gap-3 text-left"
                 onClick={() => setExpandedExercise(isExpanded ? null : `${exerciseKey}-${exIdx}`)}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isExerciseLog && ex.completed ? 'bg-[#00FF87]/15' : 'bg-[#0D0D0D]'
-                }`}>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${isExerciseLog && ex.completed ? 'bg-[#00FF87]/15' : 'bg-[#0D0D0D]'
+                  }`}>
                   {isExerciseLog && ex.completed
                     ? <CheckCircle2 size={16} className="text-[#00FF87]" />
                     : <Dumbbell size={16} className="text-[#FF6B35]" />
@@ -298,8 +313,8 @@ export default function Workout() {
                       {isTimeBased
                         ? `${ex.sets} sets · ${ex.weight}${exUnit === 'minutes' ? 'min' : 'm'}`
                         : isBodyweight
-                        ? `${ex.sets}×${ex.reps} reps`
-                        : `${ex.sets}×${ex.reps} @ ${ex.weight}${exUnit}`}
+                          ? `${ex.sets}×${ex.reps} reps`
+                          : `${ex.sets}×${ex.reps} @ ${ex.weight}${exUnit}`}
                     </p>
                   )}
                 </div>
@@ -327,9 +342,8 @@ export default function Workout() {
                   {(ex as ExerciseLog).sets.map((set: SetLog, setIdx: number) => (
                     <div
                       key={setIdx}
-                      className={`grid ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'} gap-2 items-center p-2 rounded-xl transition-all ${
-                        set.completed ? 'bg-[#00FF87]/5' : 'bg-[#0D0D0D]'
-                      }`}
+                      className={`grid ${isTimeBased || isBodyweight ? 'grid-cols-3' : 'grid-cols-4'} gap-2 items-center p-2 rounded-xl transition-all ${set.completed ? 'bg-[#00FF87]/5' : 'bg-[#0D0D0D]'
+                        }`}
                     >
                       <button
                         className="flex items-center justify-center"
@@ -344,8 +358,8 @@ export default function Workout() {
                         {isTimeBased
                           ? `${set.targetWeight}${exUnit === 'minutes' ? 'min' : 'm'}`
                           : isBodyweight
-                          ? `${set.targetReps} reps`
-                          : `${set.targetReps}×${set.targetWeight}`}
+                            ? `${set.targetReps} reps`
+                            : `${set.targetReps}×${set.targetWeight}`}
                       </p>
                       {isTimeBased ? (
                         <input

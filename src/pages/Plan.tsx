@@ -26,6 +26,11 @@ export default function Plan() {
     await db.plans.update(id, { isActive: true })
   }
 
+  const handleDeactivate = async () => {
+    await updateSettings({ activePlanId: null })
+    await db.plans.toCollection().modify({ isActive: false })
+  }
+
   const handleDelete = async (id: string) => {
     await db.plans.delete(id)
     if (activePlanId === id) {
@@ -49,6 +54,7 @@ export default function Plan() {
   return (
     <div className="pb-24">
       <PageHeader
+        back
         title="Workout Plans"
         subtitle={`${plans?.length ?? 0} plan${plans?.length !== 1 ? 's' : ''}`}
         right={
@@ -107,13 +113,12 @@ export default function Plan() {
                       {plan.weekTemplate.map((day, i) => (
                         <div
                           key={i}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                            day.isRest
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold ${day.isRest
                               ? 'bg-[#2A2A2A] text-[#555555]'
                               : 'bg-[#FF6B35]/15 text-[#FF6B35]'
-                          }`}
+                            }`}
                         >
-                          {['S','M','T','W','T','F','S'][day.dayOfWeek]}
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.dayOfWeek]}
                         </div>
                       ))}
                     </div>
@@ -121,7 +126,7 @@ export default function Plan() {
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                  {!isActive && (
+                  {!isActive ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -129,6 +134,15 @@ export default function Plan() {
                       onClick={() => handleActivate(plan.id)}
                     >
                       Set Active
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      fullWidth
+                      onClick={handleDeactivate}
+                    >
+                      Unset Active
                     </Button>
                   )}
                   <Button

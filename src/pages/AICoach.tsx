@@ -13,6 +13,7 @@ import { chat, streamChat, type ChatMessage } from "../services/gemini";
 import {
   buildHealthContext,
   buildExerciseContext,
+  buildPlanContext,
   SYSTEM_PROMPT,
   PLAN_SYSTEM_PROMPT,
 } from "../services/healthContext";
@@ -261,11 +262,13 @@ export default function AICoach() {
   // Shared context
   const [healthContext, setHealthContext] = useState<string | null>(null);
   const [exerciseContext, setExerciseContext] = useState<string | null>(null);
-  const contextReady = healthContext !== null && exerciseContext !== null;
+  const [planContext, setPlanContext] = useState<string | null>(null);
+  const contextReady = healthContext !== null && exerciseContext !== null && planContext !== null;
 
   useEffect(() => {
     buildHealthContext().then(setHealthContext);
     buildExerciseContext().then(setExerciseContext);
+    buildPlanContext().then(setPlanContext);
   }, []);
 
   // ── Feedback state ──────────────────────────────────────────────────────────
@@ -370,7 +373,7 @@ export default function AICoach() {
     const userContent = [
       PLAN_SYSTEM_PROMPT,
       `\nAvailable exercises:\n${exerciseContext}`,
-      `\nUser fitness data:\n${healthContext}`,
+      `\nUser profile:\n${planContext}`,
       `\nPlan request: ${query.trim()}`,
     ].join("\n");
 
@@ -403,8 +406,8 @@ export default function AICoach() {
               content: [
                 PLAN_SYSTEM_PROMPT,
                 `\nAvailable exercises:\n${exerciseContext}`,
-                `\nUser fitness data:\n${healthContext}`,
-                `\nCurrent plan JSON:\n${JSON.stringify(generatedPlan, null, 2)}`,
+                `\nUser profile:\n${planContext}`,
+                `\nCurrent plan JSON:\n${JSON.stringify(generatedPlan)}`,
               ].join("\n"),
             },
             {

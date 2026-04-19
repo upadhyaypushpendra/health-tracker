@@ -154,10 +154,25 @@ export async function buildExerciseContext(): Promise<string> {
   }
   const exercises = await db.exercises.toArray();
   const result = exercises
-    .map((e) => `${e.id} | ${e.name} | ${e.muscleGroup}`)
+    .map((e) => `${e.id}|${e.name}`)
     .join("\n");
   exerciseContextCache = { value: result, expiresAt: Date.now() + TTL_MS }
   return result
+}
+
+export async function buildPlanContext(): Promise<string> {
+  const [settings] = await Promise.all([getSettings()]);
+  const activePlan = settings.activePlanId
+    ? await db.plans.get(settings.activePlanId)
+    : null;
+
+  const lines = [
+    `Calorie goal:${settings.calorieGoal}kcal Water goal:${settings.waterGoal}ml Unit:${settings.weightUnit}`,
+  ];
+  if (activePlan) {
+    lines.push(`Active plan:${activePlan.name} Cal:${activePlan.calorieTarget ?? settings.calorieGoal} Water:${activePlan.waterTarget ?? settings.waterGoal}`);
+  }
+  return lines.join("\n");
 }
 
 export const PLAN_SYSTEM_PROMPT = `You are a fitness plan creator for BodySync app.

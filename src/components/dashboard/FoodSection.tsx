@@ -227,7 +227,7 @@ export default function FoodSection() {
               <button
                 key={food.name}
                 onClick={() => quickLogFood(food)}
-                className="flex items-center justify-between px-3 py-2 bg-black/20 hover:bg-black/30 active:scale-[0.98] rounded-xl transition-all text-left border border-white/5"
+                className="flex items-center justify-between px-3 py-2 bg-black/20 hover:bg-black/30 active:scale-[0.98] rounded-xl transition-all text-left border border-white/40"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{food.name}</p>
@@ -237,7 +237,7 @@ export default function FoodSection() {
                 </div>
                 {justLogged.has(food.name)
                   ? <CheckCircle2 size={16} className="shrink-0 ml-3" style={{ color: accentColor }} />
-                  : <Plus size={16} className="text-[#555555] shrink-0 ml-3" />
+                  : <Plus size={30} className="text-[#555555] p-1 shrink-0 ml-3 border rounded-full bg-orange-300" />
                 }
               </button>
             ))}
