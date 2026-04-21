@@ -32,11 +32,17 @@ export default function Settings() {
   const [geminiKey, setGeminiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [keySaved, setKeySaved] = useState(false)
+  const [keyError, setKeyError] = useState(false)
 
   const handleSaveGeminiKey = async () => {
-    await setGeminiApiKey(geminiKey)
-    setKeySaved(true)
-    setTimeout(() => setKeySaved(false), 2000)
+    try {
+      await setGeminiApiKey(geminiKey)
+      setKeySaved(true)
+      setTimeout(() => setKeySaved(false), 2000)
+    } catch {
+      setKeyError(true)
+      setTimeout(() => setKeyError(false), 3000)
+    }
   }
 
   useEffect(() => {
@@ -304,7 +310,7 @@ export default function Settings() {
               </button>
             </div>
             <Button fullWidth size="sm" className="mt-3" onClick={handleSaveGeminiKey}>
-              {keySaved ? 'Saved!' : 'Save API Key'}
+              {keySaved ? 'Saved!' : keyError ? 'Save failed — try again' : 'Save API Key'}
             </Button>
           </Card>
         </section>

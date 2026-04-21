@@ -159,4 +159,5 @@ export interface UserSettings {
   onboardingCompleted: boolean
   activePlanId: string | null
   createdAt: string
+  geminiApiKey?: string
 }

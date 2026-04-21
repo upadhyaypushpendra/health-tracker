@@ -1,3 +1,6 @@
+import { Preferences } from "@capacitor/preferences";
+import { getSettings, updateSettings } from "../db";
+
 export interface ChatMessage {
   role: "user" | "model";
   content: string;
@@ -6,16 +9,28 @@ export interface ChatMessage {
 const WORKER_URL = import.meta.env.VITE_AI_WORKER_URL as string;
 const APP_SECRET = import.meta.env.VITE_APP_SECRET as string;
 
-import { Preferences } from "@capacitor/preferences";
-
 const PREF_KEY = "gemini_api_key";
+
 export const getGeminiApiKey = async (): Promise<string> => {
-  const { value } = await Preferences.get({ key: PREF_KEY });
-  return value ?? "";
+  const settings = await getSettings();
+  if (settings.geminiApiKey !== undefined) return settings.geminiApiKey;
+
+  // One-time migration: pull key from Capacitor Preferences if it was saved there before
+  try {
+    const { value } = await Preferences.get({ key: PREF_KEY });
+    if (value) {
+      await updateSettings({ geminiApiKey: value });
+      await Preferences.remove({ key: PREF_KEY });
+      return value;
+    }
+  } catch {
+    // Preferences plugin unavailable — skip migration
+  }
+  return "";
 };
+
 export const setGeminiApiKey = async (key: string): Promise<void> => {
-  if (key.trim()) await Preferences.set({ key: PREF_KEY, value: key.trim() });
-  else await Preferences.remove({ key: PREF_KEY });
+  await updateSettings({ geminiApiKey: key.trim() || undefined });
 };
 
 const MODEL_INDEX_KEY = "gemini_model_index";
