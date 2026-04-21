@@ -37,7 +37,7 @@ export default function StepsSection() {
               <p className="text-xs text-white/70">Sync steps from Health Connect</p>
               <button
                 onClick={connect}
-                className="text-xs font-semibold text-[#000000] bg-[#01ff86] px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+                className="text-xs font-semibold text-[#000000] bg-[#01ff86] px-3 py-1.5 rounded-lg active:scale-95 transition-transform ml-4"
               >
                 Connect
               </button>
