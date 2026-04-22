@@ -1,22 +1,20 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell, Timer, X, Pencil } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Dumbbell, Pencil } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import ProgressBar from '../components/ui/ProgressBar'
-import ProgressRing from '../components/ui/ProgressRing'
 import EmptyState from '../components/ui/EmptyState'
 import HealthTips from '../components/ui/HealthTips'
 import { useActivePlan } from '../hooks/useActivePlan'
 import { useTodayWorkout } from '../hooks/useTodayWorkout'
-import { useRestTimer } from '../hooks/useRestTimer'
+import { useTimer } from '../contexts/TimerContext'
 import { db } from '../db'
 import type { WorkoutLog, ExerciseLog, SetLog, ExerciseUnit } from '../db/types'
 import { getDayOfWeek, getTodayString, DAY_FULL_LABELS } from '../utils/dateHelpers'
 import { pct } from '../utils/calculations'
-import { playTimerSound } from '../utils/sound'
 import { hapticMedium, hapticSuccess } from '../utils/haptics'
 
 export default function Workout() {
@@ -24,12 +22,7 @@ export default function Workout() {
   const activePlan = useActivePlan()
   const todayWorkout = useTodayWorkout()
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
-  // Track which exercise the active rest timer belongs to
-  const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null)
-  const timer = useRestTimer(useCallback(() => {
-    playTimerSound()
-    setTimerExerciseId(null)
-  }, []))
+  const timer = useTimer()
 
   const todayDOW = getDayOfWeek()
   const todayPlan = activePlan?.weekTemplate.find((d) => d.dayOfWeek === todayDOW)
@@ -180,7 +173,6 @@ export default function Workout() {
       if (!allSetsComplete) {
         const planned = todayPlan?.exercises.find((p) => p.exerciseId === ex.exerciseId)
         const restSecs = planned?.restSeconds ?? 90
-        setTimerExerciseId(ex.exerciseId)
         timer.start(restSecs)
       }
     }
@@ -398,61 +390,12 @@ export default function Workout() {
                     </div>
                   ))}
 
-                  {/* Rest timer — shown for this exercise while timer is active */}
-                  {timer.active && timerExerciseId === ex.exerciseId && (
-                    <RestTimer
-                      remaining={timer.remaining}
-                      total={timer.total}
-                      onSkip={() => { timer.stop(); setTimerExerciseId(null) }}
-                    />
-                  )}
                 </div>
               )}
             </Card>
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function RestTimer({ remaining, total, onSkip }: { remaining: number; total: number; onSkip: () => void }) {
-  const pctLeft = total > 0 ? (remaining / total) * 100 : 0
-  const mins = Math.floor(remaining / 60)
-  const secs = remaining % 60
-  const label = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `${secs}s`
-
-  return (
-    <div className="mt-3 flex items-center gap-4 bg-[#0D0D0D] rounded-xl p-3">
-      <ProgressRing
-        value={pctLeft}
-        size={56}
-        strokeWidth={5}
-        color={pctLeft < 25 ? '#FF4757' : '#FF6B35'}
-        label={label}
-      />
-      <div className="flex-1">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Timer size={12} className="text-[#FF6B35]" />
-          <p className="text-xs font-semibold text-[#FF6B35]">Rest</p>
-        </div>
-        <div className="h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-1000"
-            style={{
-              width: `${pctLeft}%`,
-              backgroundColor: pctLeft < 25 ? '#FF4757' : '#FF6B35',
-            }}
-          />
-        </div>
-      </div>
-      <button
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#2A2A2A] hover:bg-[#3A3A3A] transition-colors flex-shrink-0"
-        onClick={onSkip}
-        aria-label="Skip rest"
-      >
-        <X size={14} className="text-[#666666]" />
-      </button>
     </div>
   )
 }

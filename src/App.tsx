@@ -4,6 +4,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import AppShell from './components/layout/AppShell'
 import UpdatePrompt from './components/UpdatePrompt'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
+import FloatingTimer from './components/ui/FloatingTimer'
+import { TimerProvider } from './contexts/TimerContext'
 import { db } from './db'
 
 // Eagerly loaded — needed before onboarding check resolves
@@ -92,8 +94,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppRoutes />
-      <UpdatePrompt />
+      <TimerProvider>
+        <AppRoutes />
+        <FloatingTimer />
+        <UpdatePrompt />
+      </TimerProvider>
     </BrowserRouter>
   )
 }
