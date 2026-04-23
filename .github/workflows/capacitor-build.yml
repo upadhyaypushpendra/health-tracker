@@ -3,6 +3,8 @@ name: Build Android Debug APK
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -63,6 +65,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Create and Upload Release
+        if: github.event_name != 'pull_request'
         run: |
           gh release create "v${{ github.run_number }}" \
             --title "Build ${{ github.run_number }}" \
