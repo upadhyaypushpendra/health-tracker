@@ -3,7 +3,6 @@ import type { HealthSyncPlugin } from './definitions'
 
 const HealthSync = registerPlugin<HealthSyncPlugin>('HealthSync')
 
-// Convenience wrappers for calling the plugin
 export const healthSync = {
   async syncWaterData(waterToday: any, goal: number) {
     try {
@@ -42,6 +41,43 @@ export const healthSync = {
       await HealthSync.logWaterFromWidget(amount)
     } catch (error) {
       console.error('Failed to log water from widget:', error)
+    }
+  },
+
+  async checkActivityPermission(): Promise<string> {
+    try {
+      const { activityRecognition } = await HealthSync.checkPermissions()
+      return activityRecognition
+    } catch {
+      return 'granted'
+    }
+  },
+
+  async requestActivityPermission(): Promise<string> {
+    try {
+      const { activityRecognition } = await HealthSync.requestPermissions()
+      return activityRecognition
+    } catch {
+      return 'denied'
+    }
+  },
+
+  async getStepsFromSensor(): Promise<number | null> {
+    try {
+      const { steps } = await HealthSync.getStepsFromSensor()
+      return steps
+    } catch (error) {
+      console.error('Step sensor not available:', error)
+      return null
+    }
+  },
+
+  async pinWidget(): Promise<{ success: boolean; message?: string }> {
+    try {
+      await HealthSync.pinWidget()
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, message: error?.message ?? 'Failed to pin widget' }
     }
   },
 }

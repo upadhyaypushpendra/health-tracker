@@ -14,7 +14,15 @@ export function useSteps() {
       try {
         const { available: isAvailable } = await Health.isAvailable()
         setAvailable(isAvailable)
-        if (!isAvailable) return
+
+        if (!isAvailable) {
+          // Fall back to hardware step counter sensor
+          const permission = await healthSync.checkActivityPermission()
+          if (permission !== 'granted') return
+          setConnected(true)
+          await fetchSensorSteps()
+          return
+        }
 
         const status = await Health.checkAuthorization({ read: ['steps'] })
         if (status.readAuthorized.includes('steps')) {
@@ -44,16 +52,31 @@ export function useSteps() {
     const stepCount = result.samples[0]?.value ?? 0
     setSteps(stepCount)
 
-    // Sync to widget
     const settings = await getSettings()
     await healthSync.syncStepData(stepCount, settings.stepGoal)
   }
 
+  async function fetchSensorSteps() {
+    const sensorSteps = await healthSync.getStepsFromSensor()
+    if (sensorSteps !== null) {
+      setSteps(sensorSteps)
+      const settings = await getSettings()
+      await healthSync.syncStepData(sensorSteps, settings.stepGoal)
+    }
+  }
+
   async function connect() {
     try {
-      await Health.requestAuthorization({ read: ['steps'] })
-      setConnected(true)
-      await fetchSteps()
+      if (available) {
+        await Health.requestAuthorization({ read: ['steps'] })
+        setConnected(true)
+        await fetchSteps()
+      } else {
+        const permission = await healthSync.requestActivityPermission()
+        if (permission !== 'granted') return
+        setConnected(true)
+        await fetchSensorSteps()
+      }
     } catch {
       // user denied — stay on connect screen
     }

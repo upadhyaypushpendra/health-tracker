@@ -27,8 +27,14 @@
             android:name=".HealthWidgetReceiver"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
                 <action android:name="com.bodysync.app.LOG_WATER" />
             </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/health_widget_info" />
         </receiver>
 
         <provider
@@ -42,4 +48,5 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 </manifest>

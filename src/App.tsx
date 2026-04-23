@@ -21,6 +21,7 @@ const Progress    = lazy(() => import('./pages/Progress'))
 const Library     = lazy(() => import('./pages/Library'))
 const Settings    = lazy(() => import('./pages/Settings'))
 const AICoach     = lazy(() => import('./pages/AICoach'))
+const Widgets     = lazy(() => import('./pages/Widgets'))
 
 function PageLoader() {
   return (
@@ -78,6 +79,7 @@ function AppRoutes() {
             <Route path="/library" element={<PageBoundary><Library /></PageBoundary>} />
             <Route path="/settings" element={<PageBoundary><Settings /></PageBoundary>} />
             <Route path="/ai" element={<PageBoundary><AICoach /></PageBoundary>} />
+            <Route path="/widgets" element={<PageBoundary><Widgets /></PageBoundary>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         )}

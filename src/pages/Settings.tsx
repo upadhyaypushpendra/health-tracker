@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Download, Upload, Trash2, Bell, ChevronRight, User, ClipboardList, Dumbbell, Bot, Eye, EyeOff } from 'lucide-react'
+import { Download, Upload, Trash2, Bell, ChevronRight, User, ClipboardList, Dumbbell, Bot, Eye, EyeOff, LayoutGrid } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog } from '@capacitor/dialog'
 import { v4 as uuid } from 'uuid'
@@ -226,6 +226,12 @@ export default function Settings() {
               label="Exercise Library"
               sub="Browse 50+ exercises"
               onClick={() => navigate('/library')}
+            />
+            <SettingsRow
+              icon={<LayoutGrid size={16} className="text-[#3B82F6]" />}
+              label="Widgets"
+              sub="Add widgets to your home screen"
+              onClick={() => navigate('/widgets')}
             />
           </div>
         </section>
