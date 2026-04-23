@@ -79,7 +79,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Create and Upload Release
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           gh release create "v${{ github.run_number }}" \
             --title "Build ${{ github.run_number }}" \
