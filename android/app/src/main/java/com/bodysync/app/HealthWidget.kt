@@ -1,17 +1,19 @@
 package com.bodysync.app
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.action.actionSendBroadcast
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -28,14 +30,32 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
-private val BgMain   = Color(0xFF0D0D0D)
-private val BgRow    = Color(0xFF1A1A1A)
-private val BgBadge  = Color(0xFF262626)
-private val TxtPri   = Color(0xFFFFFFFF)
-private val TxtSec   = Color(0xFF888888)
+private val BgMain  = Color(0xFF0D0D0D)
+private val BgCard  = Color(0xFF1A1A1A)
+private val BgBadge = Color(0xFF262626)
+private val TxtPri  = Color(0xFFFFFFFF)
+private val TxtSec  = Color(0xFF888888)
+private val Divider = Color(0xFF2A2A2A)
+
 private val ColWater = Color(0xFF3B82F6)
 private val ColSteps = Color(0xFF8B5CF6)
 private val ColMeals = Color(0xFFF97316)
+
+class LogWaterCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        val prefs = context.getSharedPreferences("com.bodysync.app.health", Context.MODE_PRIVATE)
+        val current = prefs.getInt("bodysync_water_today", 0)
+        prefs.edit()
+            .putInt("bodysync_water_today", current + 250)
+            .putLong("bodysync_updated_at", System.currentTimeMillis())
+            .apply()
+        HealthWidget().updateAll(context)
+    }
+}
 
 class HealthWidget : GlanceAppWidget() {
 
@@ -54,7 +74,6 @@ class HealthWidget : GlanceAppWidget() {
 
         provideContent {
             Content(
-                context       = context,
                 waterToday    = waterToday,
                 waterGoal     = waterGoal,
                 mealCount     = mealCount,
@@ -70,30 +89,24 @@ class HealthWidget : GlanceAppWidget() {
 
     @Composable
     private fun Content(
-        context: Context,
         waterToday: Int, waterGoal: Int,
         mealCount: Int, calories: Int, calorieGoal: Int,
         workoutExists: Boolean, workoutDone: Boolean,
         steps: Int, stepGoal: Int
     ) {
-        val waterPct    = pct(waterToday, waterGoal)
-        val caloriePct  = pct(calories, calorieGoal)
-        val stepPct     = pct(steps, stepGoal)
+        val waterPct   = pct(waterToday, waterGoal)
+        val caloriePct = pct(calories, calorieGoal)
+        val stepPct    = pct(steps, stepGoal)
 
         val workoutLabel = when {
             workoutDone   -> "Done ✓"
             workoutExists -> "Planned"
-            else          -> "—"
+            else          -> "Rest"
         }
         val workoutColor = when {
             workoutDone   -> Color(0xFF22C55E)
             workoutExists -> Color(0xFFF59E0B)
             else          -> Color(0xFF555555)
-        }
-
-        val logWaterIntent = Intent(context, HealthWidgetReceiver::class.java).apply {
-            action = "com.bodysync.app.LOG_WATER"
-            putExtra("amount", 250)
         }
 
         Column(
@@ -102,7 +115,7 @@ class HealthWidget : GlanceAppWidget() {
                 .background(BgMain)
                 .padding(10.dp)
         ) {
-            // ── Header ──────────────────────────────────────
+            // Header
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -133,92 +146,71 @@ class HealthWidget : GlanceAppWidget() {
                 }
             }
 
-            Spacer(modifier = GlanceModifier.height(8.dp))
+            Spacer(modifier = GlanceModifier.height(10.dp))
 
-            // ── Row 1: Water | Steps ────────────────────────
-            Row(
+            // Card
+            Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(BgRow)
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .background(BgCard)
+                    .padding(horizontal = 10.dp, vertical = 12.dp)
             ) {
-                MetricCell(
-                    modifier    = GlanceModifier.defaultWeight(),
-                    label       = "WATER",
-                    value       = fmt(waterToday),
-                    unit        = "ml",
-                    goal        = "/ ${fmt(waterGoal)} ml",
-                    pct         = "$waterPct%",
-                    valueColor  = ColWater,
-                    pctColor    = ColWater
-                )
-                Spacer(modifier = GlanceModifier.width(8.dp))
-                VerticalDivider()
-                Spacer(modifier = GlanceModifier.width(8.dp))
-                MetricCell(
-                    modifier    = GlanceModifier.defaultWeight(),
-                    label       = "STEPS",
-                    value       = fmt(steps),
-                    unit        = "",
-                    goal        = "/ ${fmt(stepGoal)}",
-                    pct         = "$stepPct%",
-                    valueColor  = ColSteps,
-                    pctColor    = ColSteps
-                )
-            }
-
-            Spacer(modifier = GlanceModifier.height(6.dp))
-
-            // ── Row 2: Meals | Workout ───────────────────────
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .background(BgRow)
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
-            ) {
-                MetricCell(
-                    modifier    = GlanceModifier.defaultWeight(),
-                    label       = "MEALS",
-                    value       = "$mealCount",
-                    unit        = "meals",
-                    goal        = "$calories / $calorieGoal kcal",
-                    pct         = "$caloriePct%",
-                    valueColor  = ColMeals,
-                    pctColor    = ColMeals
-                )
-                Spacer(modifier = GlanceModifier.width(8.dp))
-                VerticalDivider()
-                Spacer(modifier = GlanceModifier.width(8.dp))
-                Column(modifier = GlanceModifier.defaultWeight()) {
-                    Text(
-                        "WORKOUT",
-                        style = TextStyle(
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = ColorProvider(TxtSec)
-                        )
+                // Row 1: Water | Steps
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Section(
+                        modifier = GlanceModifier.defaultWeight(),
+                        icon     = "💧",
+                        label    = "${fmt(waterToday)}/${fmt(waterGoal)} ml",
+                        pct      = "$waterPct%",
+                        color    = ColWater
                     )
-                    Spacer(modifier = GlanceModifier.height(4.dp))
-                    Text(
-                        workoutLabel,
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(workoutColor)
-                        )
+                    VSeparator()
+                    Section(
+                        modifier = GlanceModifier.defaultWeight(),
+                        icon     = "🏃",
+                        label    = "${fmt(steps)}/${fmt(stepGoal)}",
+                        pct      = "$stepPct%",
+                        color    = ColSteps
+                    )
+                }
+
+                HSeparator()
+
+                // Row 2: Meals | Workout
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Section(
+                        modifier = GlanceModifier.defaultWeight(),
+                        icon     = "🍽",
+                        label    = "${fmt(calories)}/${fmt(calorieGoal)} kcal",
+                        pct      = "$caloriePct%",
+                        color    = ColMeals
+                    )
+                    VSeparator()
+                    Section(
+                        modifier  = GlanceModifier.defaultWeight(),
+                        icon      = "💪",
+                        label     = workoutLabel,
+                        pct       = "$mealCount meals",
+                        color     = workoutColor
                     )
                 }
             }
 
             Spacer(modifier = GlanceModifier.defaultWeight())
 
-            // ── Log Water button ─────────────────────────────
+            // Button
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .background(Color(0xFF1D4ED8))
                     .padding(vertical = 8.dp)
-                    .clickable(actionSendBroadcast(logWaterIntent)),
+                    .clickable(actionRunCallback<LogWaterCallback>()),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -233,55 +225,30 @@ class HealthWidget : GlanceAppWidget() {
         }
     }
 
+    // Icon  Label  [Pct%]  — all on one horizontal line
     @Composable
-    private fun MetricCell(
+    private fun Section(
         modifier: GlanceModifier,
+        icon: String,
         label: String,
-        value: String,
-        unit: String,
-        goal: String,
         pct: String,
-        valueColor: Color,
-        pctColor: Color
+        color: Color
     ) {
-        Column(modifier = modifier) {
+        Row(
+            modifier = modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(icon, style = TextStyle(fontSize = 14.sp))
+            Spacer(modifier = GlanceModifier.width(6.dp))
             Text(
                 label,
                 style = TextStyle(
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
-                    color = ColorProvider(TxtSec)
+                    color = ColorProvider(color)
                 )
             )
-            Spacer(modifier = GlanceModifier.height(3.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    value,
-                    style = TextStyle(
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorProvider(valueColor)
-                    )
-                )
-                if (unit.isNotEmpty()) {
-                    Spacer(modifier = GlanceModifier.width(3.dp))
-                    Text(
-                        unit,
-                        style = TextStyle(
-                            fontSize = 9.sp,
-                            color = ColorProvider(TxtSec)
-                        )
-                    )
-                }
-            }
-            Text(
-                goal,
-                style = TextStyle(
-                    fontSize = 9.sp,
-                    color = ColorProvider(TxtSec)
-                )
-            )
-            Spacer(modifier = GlanceModifier.height(5.dp))
+            Spacer(modifier = GlanceModifier.defaultWeight())
             Box(
                 modifier = GlanceModifier
                     .background(BgBadge)
@@ -293,7 +260,7 @@ class HealthWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(pctColor)
+                        color = ColorProvider(color)
                     )
                 )
             }
@@ -301,12 +268,22 @@ class HealthWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun VerticalDivider() {
+    private fun VSeparator() {
         Box(
             modifier = GlanceModifier
                 .width(1.dp)
-                .height(60.dp)
-                .background(Color(0xFF2A2A2A))
+                .height(36.dp)
+                .background(Divider)
+        ) {}
+    }
+
+    @Composable
+    private fun HSeparator() {
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Divider)
         ) {}
     }
 
