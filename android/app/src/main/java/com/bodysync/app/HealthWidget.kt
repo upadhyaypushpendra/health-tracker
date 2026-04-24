@@ -16,8 +16,6 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.Image
 import androidx.glance.ImageProvider
-import androidx.glance.LocalSize
-import androidx.glance.appwidget.SizeMode
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -35,10 +33,8 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
 private val BgMain  = Color(0xFF0D0D0D)
-private val BgCard  = Color(0xFF1A1A1A)
 private val BgBadge = Color(0xFF262626)
 private val TxtPri  = Color(0xFFFFFFFF)
-private val TxtSec  = Color(0xFF888888)
 private val Divider = Color(0xFF2A2A2A)
 
 private val ColWater = Color(0xFF3B82F6)
@@ -65,8 +61,6 @@ class LogWaterCallback : ActionCallback {
 }
 
 class HealthWidget : GlanceAppWidget() {
-
-    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val prefs = context.getSharedPreferences("com.bodysync.app.health", Context.MODE_PRIVATE)
@@ -121,13 +115,11 @@ class HealthWidget : GlanceAppWidget() {
             else          -> Color(0xFF555555)
         }
 
-        val isWide = LocalSize.current.width >= 200.dp
-
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(BgMain)
-                .padding(10.dp)
+                .padding(6.dp)
         ) {
             // Header
             Row(
@@ -137,7 +129,7 @@ class HealthWidget : GlanceAppWidget() {
                 Text(
                     "Body Sync",
                     style = TextStyle(
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = ColorProvider(TxtPri)
                     )
@@ -152,7 +144,7 @@ class HealthWidget : GlanceAppWidget() {
                     Text(
                         "Today",
                         style = TextStyle(
-                            fontSize = 8.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             color = ColorProvider(ColWater)
                         )
@@ -160,86 +152,47 @@ class HealthWidget : GlanceAppWidget() {
                 }
             }
 
-            Spacer(modifier = GlanceModifier.height(10.dp))
+            Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // Card
+            // Sections
             Column(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .background(BgCard)
-                    .padding(horizontal = 10.dp, vertical = 12.dp)
+                modifier = GlanceModifier.fillMaxWidth()
             ) {
-                if (isWide) {
-                    // 2×2 grid
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Section(
-                            modifier = GlanceModifier.defaultWeight(),
-                            iconRes  = R.drawable.ic_water,
-                            label    = "${fmt(waterToday)}/${fmt(waterGoal)} ml",
-                            pct      = "$waterPct%",
-                            color    = ColWater
-                        )
-                        VSeparator()
-                        Section(
-                            modifier = GlanceModifier.defaultWeight(),
-                            iconRes  = R.drawable.ic_steps,
-                            label    = "${fmt(steps)}/${fmt(stepGoal)}",
-                            pct      = "$stepPct%",
-                            color    = ColSteps
-                        )
-                    }
-                    HSeparator()
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Section(
-                            modifier = GlanceModifier.defaultWeight(),
-                            iconRes  = R.drawable.ic_meals,
-                            label    = "${fmt(calories)}/${fmt(calorieGoal)} kcal",
-                            pct      = "$caloriePct%",
-                            color    = ColMeals
-                        )
-                        VSeparator()
-                        Section(
-                            modifier = GlanceModifier.defaultWeight(),
-                            iconRes  = R.drawable.ic_workout,
-                            label    = workoutLabel,
-                            pct      = "$mealCount meals",
-                            color    = workoutColor
-                        )
-                    }
-                } else {
-                    // 4×1 stacked column
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Section(
-                        modifier = GlanceModifier.fillMaxWidth(),
+                        modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_water,
                         label    = "${fmt(waterToday)}/${fmt(waterGoal)} ml",
                         pct      = "$waterPct%",
                         color    = ColWater
                     )
-                    HSeparator()
+                    VSeparator()
                     Section(
-                        modifier = GlanceModifier.fillMaxWidth(),
+                        modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_steps,
                         label    = "${fmt(steps)}/${fmt(stepGoal)}",
                         pct      = "$stepPct%",
                         color    = ColSteps
                     )
-                    HSeparator()
+                }
+                HSeparator()
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Section(
-                        modifier = GlanceModifier.fillMaxWidth(),
+                        modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_meals,
                         label    = "${fmt(calories)}/${fmt(calorieGoal)} kcal",
                         pct      = "$caloriePct%",
                         color    = ColMeals
                     )
-                    HSeparator()
+                    VSeparator()
                     Section(
-                        modifier = GlanceModifier.fillMaxWidth(),
+                        modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_workout,
                         label    = workoutLabel,
                         pct      = "$mealCount meals",
@@ -260,7 +213,7 @@ class HealthWidget : GlanceAppWidget() {
                 Text(
                     if (justLogged) "Logged ✓" else "Drank 1 glass",
                     style = TextStyle(
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = ColorProvider(TxtPri)
                     )
@@ -279,19 +232,19 @@ class HealthWidget : GlanceAppWidget() {
         color: Color
     ) {
         Row(
-            modifier = modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+            modifier = modifier.padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 provider = ImageProvider(iconRes),
                 contentDescription = null,
-                modifier = GlanceModifier.width(16.dp).height(16.dp)
+                modifier = GlanceModifier.width(20.dp).height(20.dp)
             )
             Spacer(modifier = GlanceModifier.width(6.dp))
             Text(
                 label,
                 style = TextStyle(
-                    fontSize = 10.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = ColorProvider(color)
                 )
@@ -306,7 +259,7 @@ class HealthWidget : GlanceAppWidget() {
                 Text(
                     pct,
                     style = TextStyle(
-                        fontSize = 9.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = ColorProvider(color)
                     )
@@ -320,7 +273,7 @@ class HealthWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .width(1.dp)
-                .height(36.dp)
+                .height(42.dp)
                 .background(Divider)
         ) {}
     }
