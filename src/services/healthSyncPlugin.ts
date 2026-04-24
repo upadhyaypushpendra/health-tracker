@@ -44,6 +44,15 @@ export const healthSync = {
     }
   },
 
+  async getPendingWidgetWater(): Promise<number> {
+    try {
+      const { amount } = await HealthSync.getPendingWidgetWater()
+      return amount
+    } catch {
+      return 0
+    }
+  },
+
   async checkActivityPermission(): Promise<string> {
     try {
       const { activityRecognition } = await HealthSync.checkPermissions()

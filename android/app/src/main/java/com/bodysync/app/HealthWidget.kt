@@ -49,8 +49,10 @@ class LogWaterCallback : ActionCallback {
     ) {
         val prefs = context.getSharedPreferences("com.bodysync.app.health", Context.MODE_PRIVATE)
         val current = prefs.getInt("bodysync_water_today", 0)
+        val pending = prefs.getInt("bodysync_widget_water_pending", 0)
         prefs.edit()
             .putInt("bodysync_water_today", current + 250)
+            .putInt("bodysync_widget_water_pending", pending + 250)
             .putLong("bodysync_updated_at", System.currentTimeMillis())
             .apply()
         HealthWidget().updateAll(context)

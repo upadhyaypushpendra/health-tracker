@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import FloatingTimer from './components/ui/FloatingTimer'
 import { TimerProvider } from './contexts/TimerContext'
 import { db } from './db'
+import { useWidgetSync } from './hooks/useWidgetSync'
 
 // Eagerly loaded — needed before onboarding check resolves
 import Onboarding from './pages/Onboarding'
@@ -92,6 +93,8 @@ export default function App() {
   useEffect(() => {
     if (navigator.storage?.persist) navigator.storage.persist()
   }, [])
+
+  useWidgetSync()
 
   return (
     <BrowserRouter>

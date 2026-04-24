@@ -237,6 +237,20 @@ class HealthSyncPlugin : Plugin() {
   }
 
   @PluginMethod
+  fun getPendingWidgetWater(call: PluginCall) {
+    try {
+      val prefs = getSharedPrefs()
+      val pending = prefs.getInt("bodysync_widget_water_pending", 0)
+      prefs.edit().putInt("bodysync_widget_water_pending", 0).apply()
+      val result = JSObject()
+      result.put("amount", pending)
+      call.resolve(result)
+    } catch (error: Exception) {
+      call.reject("Failed to get pending widget water: ${error.message}", error)
+    }
+  }
+
+  @PluginMethod
   fun pinWidget(call: PluginCall) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
       call.reject("Widget pinning requires Android 8.0 or above")

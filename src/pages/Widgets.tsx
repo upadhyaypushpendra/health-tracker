@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Droplets, Utensils, Dumbbell, Activity, Smartphone } from 'lucide-react'
+import { Plus, Smartphone } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import PageHeader from '../components/layout/PageHeader'
 import { healthSync } from '../services/healthSyncPlugin'
@@ -117,56 +117,52 @@ function WidgetCard({
 
 function HealthWidgetPreview() {
   return (
-    <div className="w-full max-w-[280px] bg-white rounded-2xl p-3.5 shadow-lg">
-      <p className="text-[11px] font-semibold text-gray-800 text-center mb-3">Today's Health</p>
-
-      {/* Water */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
-          <Droplets size={12} className="text-blue-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[9px] text-gray-400 leading-none">Water</p>
-          <p className="text-[10px] font-medium text-gray-800">1,200 / 3,000 ml</p>
-        </div>
-        <div className="bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0">
-          <p className="text-[9px] text-blue-600 font-semibold">40%</p>
+    <div className="w-full max-w-[300px] bg-[#0D0D0D] rounded-2xl p-2.5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5 px-1">
+        <p className="text-[11px] font-bold text-white">Body Sync</p>
+        <div className="bg-[#1E3A5F] rounded px-1.5 py-0.5">
+          <p className="text-[8px] font-medium text-blue-400">Today</p>
         </div>
       </div>
 
-      {/* Meals */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="w-6 h-6 bg-orange-50 rounded-full flex items-center justify-center shrink-0">
-          <Utensils size={12} className="text-orange-500" />
+      {/* Card */}
+      <div className="bg-[#1A1A1A] rounded-xl overflow-hidden">
+        {/* Row 1: Water | Steps */}
+        <div className="flex items-center divide-x divide-[#2A2A2A]">
+          <Section icon="💧" label="1,200/3,000 ml" pct="40%" color="text-blue-400" badgeColor="text-blue-400" />
+          <Section icon="🏃" label="4,230/10,000"   pct="42%" color="text-purple-400" badgeColor="text-purple-400" />
         </div>
-        <p className="flex-1 text-[10px] text-gray-700">3 meals · 1,450 / 2,000 kcal</p>
-      </div>
 
-      {/* Workout */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="w-6 h-6 bg-green-50 rounded-full flex items-center justify-center shrink-0">
-          <Dumbbell size={12} className="text-green-500" />
-        </div>
-        <p className="flex-1 text-[10px] text-gray-400">No workout today</p>
-      </div>
+        {/* Divider */}
+        <div className="h-px bg-[#2A2A2A]" />
 
-      {/* Steps */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center shrink-0">
-          <Activity size={12} className="text-purple-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[9px] text-gray-400 leading-none">Steps</p>
-          <p className="text-[10px] font-medium text-gray-800">4,230 / 10,000</p>
-        </div>
-        <div className="bg-purple-50 rounded-md px-1.5 py-0.5 shrink-0">
-          <p className="text-[9px] text-purple-600 font-semibold">42%</p>
+        {/* Row 2: Meals | Workout */}
+        <div className="flex items-center divide-x divide-[#2A2A2A]">
+          <Section icon="🍽" label="1,450/2,000 kcal" pct="73%" color="text-orange-400" badgeColor="text-orange-400" />
+          <Section icon="💪" label="Done ✓"            pct="3 meals" color="text-green-400" badgeColor="text-green-400" />
         </div>
       </div>
 
-      {/* Log Water button */}
-      <div className="bg-blue-600 rounded-lg py-1.5 text-center">
-        <p className="text-[10px] font-semibold text-white">Log 250ml Water</p>
+      {/* Button */}
+      <div className="mt-2 bg-blue-700 rounded-xl py-2 text-center">
+        <p className="text-[10px] font-bold text-white">Drank 1 glass</p>
+      </div>
+    </div>
+  )
+}
+
+function Section({
+  icon, label, pct, color, badgeColor,
+}: {
+  icon: string; label: string; pct: string; color: string; badgeColor: string;
+}) {
+  return (
+    <div className="flex-1 flex items-center gap-1.5 px-2.5 py-2.5">
+      <span className="text-[13px] shrink-0">{icon}</span>
+      <p className={`flex-1 text-[9px] font-medium leading-tight ${color} min-w-0 truncate`}>{label}</p>
+      <div className="bg-[#262626] rounded px-1 py-0.5 shrink-0">
+        <p className={`text-[8px] font-bold ${badgeColor}`}>{pct}</p>
       </div>
     </div>
   )
