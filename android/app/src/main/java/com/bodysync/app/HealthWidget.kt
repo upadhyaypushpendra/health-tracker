@@ -7,8 +7,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -19,7 +17,6 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
@@ -67,12 +64,6 @@ class HealthWidget : GlanceAppWidget() {
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Image(
-          provider = ImageProvider(R.drawable.ic_water),
-          contentDescription = "Water",
-          modifier = GlanceModifier.size(20.dp)
-        )
-        Spacer(GlanceModifier.padding(horizontal = 6.dp))
         Column {
           Text("Water  $waterPct%", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.Gray)))
           Text("$waterToday / $waterGoal ml", style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.Black)))
@@ -86,12 +77,6 @@ class HealthWidget : GlanceAppWidget() {
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Image(
-          provider = ImageProvider(R.drawable.ic_meals),
-          contentDescription = "Meals",
-          modifier = GlanceModifier.size(20.dp)
-        )
-        Spacer(GlanceModifier.padding(horizontal = 6.dp))
         Text(
           "$mealCount meals, $calories / $calorieGoal kcal",
           style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.Black))
@@ -105,12 +90,6 @@ class HealthWidget : GlanceAppWidget() {
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Image(
-          provider = ImageProvider(R.drawable.ic_workout),
-          contentDescription = "Workout",
-          modifier = GlanceModifier.size(20.dp)
-        )
-        Spacer(GlanceModifier.padding(horizontal = 6.dp))
         Text(
           if (workoutExists) {
             if (workoutCompleted) "Completed" else "Planned"
@@ -131,12 +110,6 @@ class HealthWidget : GlanceAppWidget() {
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Image(
-          provider = ImageProvider(R.drawable.ic_steps),
-          contentDescription = "Steps",
-          modifier = GlanceModifier.size(20.dp)
-        )
-        Spacer(GlanceModifier.padding(horizontal = 6.dp))
         Column {
           Text("Steps  $stepsPct%", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.Gray)))
           Text("$stepsToday / $stepGoal", style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.Black)))
