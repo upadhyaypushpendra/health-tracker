@@ -58,6 +58,7 @@ class LogWaterCallback : ActionCallback {
             .putInt("bodysync_water_today", current + 250)
             .putInt("bodysync_widget_water_pending", pending + 250)
             .putLong("bodysync_updated_at", System.currentTimeMillis())
+            .putBoolean("bodysync_just_logged", true)
             .apply()
         HealthWidget().updateAll(context)
     }
@@ -79,6 +80,7 @@ class HealthWidget : GlanceAppWidget() {
         val workoutDone   = prefs.getBoolean("bodysync_workout_completed", false)
         val steps         = prefs.getInt("bodysync_steps_today", 0)
         val stepGoal      = prefs.getInt("bodysync_step_goal",  10000)
+        val justLogged    = prefs.getBoolean("bodysync_just_logged", false)
 
         provideContent {
             Content(
@@ -90,7 +92,8 @@ class HealthWidget : GlanceAppWidget() {
                 workoutExists = workoutExists,
                 workoutDone   = workoutDone,
                 steps         = steps,
-                stepGoal      = stepGoal
+                stepGoal      = stepGoal,
+                justLogged    = justLogged
             )
         }
     }
@@ -100,7 +103,8 @@ class HealthWidget : GlanceAppWidget() {
         waterToday: Int, waterGoal: Int,
         mealCount: Int, calories: Int, calorieGoal: Int,
         workoutExists: Boolean, workoutDone: Boolean,
-        steps: Int, stepGoal: Int
+        steps: Int, stepGoal: Int,
+        justLogged: Boolean
     ) {
         val waterPct   = pct(waterToday, waterGoal)
         val caloriePct = pct(calories, calorieGoal)
@@ -248,13 +252,13 @@ class HealthWidget : GlanceAppWidget() {
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1D4ED8))
+                    .background(if (justLogged) Color(0xFF16A34A) else Color(0xFF1D4ED8))
                     .padding(vertical = 8.dp)
                     .clickable(actionRunCallback<LogWaterCallback>()),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Drank 1 glass",
+                    if (justLogged) "Logged ✓" else "Drank 1 glass",
                     style = TextStyle(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
