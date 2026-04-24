@@ -91,7 +91,6 @@ class HealthSyncPlugin : Plugin() {
         .putInt("bodysync_water_today", waterAmount)
         .putInt("bodysync_water_goal", goal)
         .putLong("bodysync_updated_at", System.currentTimeMillis())
-        .putBoolean("bodysync_just_logged", false)
         .apply()
 
       refreshWidget()
