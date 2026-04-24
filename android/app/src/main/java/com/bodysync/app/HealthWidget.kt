@@ -10,7 +10,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -28,77 +28,81 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
+private val BgMain   = Color(0xFF0D0D0D)
+private val BgRow    = Color(0xFF1A1A1A)
+private val BgBadge  = Color(0xFF262626)
+private val TxtPri   = Color(0xFFFFFFFF)
+private val TxtSec   = Color(0xFF888888)
+private val ColWater = Color(0xFF3B82F6)
+private val ColSteps = Color(0xFF8B5CF6)
+private val ColMeals = Color(0xFFF97316)
+
 class HealthWidget : GlanceAppWidget() {
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val prefs = context.getSharedPreferences("com.bodysync.app.health", Context.MODE_PRIVATE)
 
-        val waterToday = prefs.getInt("bodysync_water_today", 0)
-        val waterGoal = prefs.getInt("bodysync_water_goal", 3000)
-        val mealCount = prefs.getInt("bodysync_meals_today", 0)
-        val calories = prefs.getInt("bodysync_calories_today", 0)
-        val calorieGoal = prefs.getInt("bodysync_calorie_goal", 2000)
-        val workoutExists = prefs.getBoolean("bodysync_workout_today", false)
-        val workoutCompleted = prefs.getBoolean("bodysync_workout_completed", false)
-        val steps = prefs.getInt("bodysync_steps_today", 0)
-        val stepGoal = prefs.getInt("bodysync_step_goal", 10000)
+        val waterToday    = prefs.getInt("bodysync_water_today",    0)
+        val waterGoal     = prefs.getInt("bodysync_water_goal",     3000)
+        val mealCount     = prefs.getInt("bodysync_meals_today",    0)
+        val calories      = prefs.getInt("bodysync_calories_today", 0)
+        val calorieGoal   = prefs.getInt("bodysync_calorie_goal",   2000)
+        val workoutExists = prefs.getBoolean("bodysync_workout_today",     false)
+        val workoutDone   = prefs.getBoolean("bodysync_workout_completed", false)
+        val steps         = prefs.getInt("bodysync_steps_today", 0)
+        val stepGoal      = prefs.getInt("bodysync_step_goal",  10000)
 
         provideContent {
-            WidgetContent(
-                context = context,
-                waterToday = waterToday,
-                waterGoal = waterGoal,
-                mealCount = mealCount,
-                calories = calories,
-                calorieGoal = calorieGoal,
+            Content(
+                context       = context,
+                waterToday    = waterToday,
+                waterGoal     = waterGoal,
+                mealCount     = mealCount,
+                calories      = calories,
+                calorieGoal   = calorieGoal,
                 workoutExists = workoutExists,
-                workoutCompleted = workoutCompleted,
-                steps = steps,
-                stepGoal = stepGoal
+                workoutDone   = workoutDone,
+                steps         = steps,
+                stepGoal      = stepGoal
             )
         }
     }
 
     @Composable
-    private fun WidgetContent(
+    private fun Content(
         context: Context,
-        waterToday: Int,
-        waterGoal: Int,
-        mealCount: Int,
-        calories: Int,
-        calorieGoal: Int,
-        workoutExists: Boolean,
-        workoutCompleted: Boolean,
-        steps: Int,
-        stepGoal: Int
+        waterToday: Int, waterGoal: Int,
+        mealCount: Int, calories: Int, calorieGoal: Int,
+        workoutExists: Boolean, workoutDone: Boolean,
+        steps: Int, stepGoal: Int
     ) {
-        val waterPct = if (waterGoal > 0) (waterToday * 100 / waterGoal).coerceAtMost(100) else 0
-        val caloriePct = if (calorieGoal > 0) (calories * 100 / calorieGoal).coerceAtMost(100) else 0
-        val stepPct = if (stepGoal > 0) (steps * 100 / stepGoal).coerceAtMost(100) else 0
-
-        val logWaterIntent = Intent(context, MainActivity::class.java).apply {
-            action = "com.bodysync.app.LOG_WATER"
-            putExtra("amount", 250)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+        val waterPct    = pct(waterToday, waterGoal)
+        val caloriePct  = pct(calories, calorieGoal)
+        val stepPct     = pct(steps, stepGoal)
 
         val workoutLabel = when {
-            workoutCompleted -> "Done ✓"
+            workoutDone   -> "Done ✓"
             workoutExists -> "Planned"
-            else -> "—"
+            else          -> "—"
         }
         val workoutColor = when {
-            workoutCompleted -> Color(0xFF16A34A)
+            workoutDone   -> Color(0xFF22C55E)
             workoutExists -> Color(0xFFF59E0B)
-            else -> Color(0xFF9CA3AF)
+            else          -> Color(0xFF555555)
+        }
+
+        val logWaterIntent = Intent(context, HealthWidgetReceiver::class.java).apply {
+            action = "com.bodysync.app.LOG_WATER"
+            putExtra("amount", 250)
         }
 
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFFAFAFA))
-                .padding(12.dp)
+                .background(BgMain)
+                .padding(10.dp)
         ) {
-            // Header
+            // ── Header ──────────────────────────────────────
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -108,14 +112,14 @@ class HealthWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(Color(0xFF111827))
+                        color = ColorProvider(TxtPri)
                     )
                 )
                 Spacer(modifier = GlanceModifier.defaultWeight())
                 Box(
                     modifier = GlanceModifier
-                        .background(Color(0xFFEFF6FF))
-                        .padding(horizontal = 5.dp, vertical = 2.dp),
+                        .background(Color(0xFF1E3A5F))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -123,7 +127,7 @@ class HealthWidget : GlanceAppWidget() {
                         style = TextStyle(
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Medium,
-                            color = ColorProvider(Color(0xFF2563EB))
+                            color = ColorProvider(ColWater)
                         )
                     )
                 }
@@ -131,70 +135,98 @@ class HealthWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // Top row: Water | Steps
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                MetricCard(
-                    modifier = GlanceModifier.defaultWeight(),
-                    label = "WATER",
-                    value = formatNum(waterToday),
-                    sub = "/ $waterGoal ml",
-                    pct = "$waterPct%",
-                    valueColor = Color(0xFF2563EB),
-                    badgeBg = Color(0xFFEFF6FF),
-                    badgeFg = Color(0xFF2563EB)
+            // ── Row 1: Water | Steps ────────────────────────
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .background(BgRow)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                MetricCell(
+                    modifier    = GlanceModifier.defaultWeight(),
+                    label       = "WATER",
+                    value       = fmt(waterToday),
+                    unit        = "ml",
+                    goal        = "/ ${fmt(waterGoal)} ml",
+                    pct         = "$waterPct%",
+                    valueColor  = ColWater,
+                    pctColor    = ColWater
                 )
-                Spacer(modifier = GlanceModifier.width(6.dp))
-                MetricCard(
-                    modifier = GlanceModifier.defaultWeight(),
-                    label = "STEPS",
-                    value = formatNum(steps),
-                    sub = "/ ${formatNum(stepGoal)}",
-                    pct = "$stepPct%",
-                    valueColor = Color(0xFF7C3AED),
-                    badgeBg = Color(0xFFF5F3FF),
-                    badgeFg = Color(0xFF7C3AED)
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                VerticalDivider()
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                MetricCell(
+                    modifier    = GlanceModifier.defaultWeight(),
+                    label       = "STEPS",
+                    value       = fmt(steps),
+                    unit        = "",
+                    goal        = "/ ${fmt(stepGoal)}",
+                    pct         = "$stepPct%",
+                    valueColor  = ColSteps,
+                    pctColor    = ColSteps
                 )
             }
 
             Spacer(modifier = GlanceModifier.height(6.dp))
 
-            // Bottom row: Meals | Workout
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                MetricCard(
-                    modifier = GlanceModifier.defaultWeight(),
-                    label = "MEALS",
-                    value = "$mealCount",
-                    sub = "$calories / $calorieGoal kcal",
-                    pct = "$caloriePct%",
-                    valueColor = Color(0xFFEA580C),
-                    badgeBg = Color(0xFFFFF7ED),
-                    badgeFg = Color(0xFFEA580C)
+            // ── Row 2: Meals | Workout ───────────────────────
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .background(BgRow)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                MetricCell(
+                    modifier    = GlanceModifier.defaultWeight(),
+                    label       = "MEALS",
+                    value       = "$mealCount",
+                    unit        = "meals",
+                    goal        = "$calories / $calorieGoal kcal",
+                    pct         = "$caloriePct%",
+                    valueColor  = ColMeals,
+                    pctColor    = ColMeals
                 )
-                Spacer(modifier = GlanceModifier.width(6.dp))
-                WorkoutCard(
-                    modifier = GlanceModifier.defaultWeight(),
-                    label = workoutLabel,
-                    color = workoutColor
-                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                VerticalDivider()
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Text(
+                        "WORKOUT",
+                        style = TextStyle(
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = ColorProvider(TxtSec)
+                        )
+                    )
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Text(
+                        workoutLabel,
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorProvider(workoutColor)
+                        )
+                    )
+                }
             }
 
             Spacer(modifier = GlanceModifier.defaultWeight())
 
-            // Log Water button
+            // ── Log Water button ─────────────────────────────
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(Color(0xFF2563EB))
-                    .padding(vertical = 7.dp)
-                    .clickable(actionStartActivity(logWaterIntent)),
+                    .background(Color(0xFF1D4ED8))
+                    .padding(vertical = 8.dp)
+                    .clickable(actionSendBroadcast(logWaterIntent)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "+ Log 250ml Water",
+                    "Drank 1 glass",
                     style = TextStyle(
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(Color.White)
+                        color = ColorProvider(TxtPri)
                     )
                 )
             }
@@ -202,49 +234,57 @@ class HealthWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun MetricCard(
+    private fun MetricCell(
         modifier: GlanceModifier,
         label: String,
         value: String,
-        sub: String,
+        unit: String,
+        goal: String,
         pct: String,
         valueColor: Color,
-        badgeBg: Color,
-        badgeFg: Color
+        pctColor: Color
     ) {
-        Column(
-            modifier = modifier
-                .background(Color.White)
-                .padding(8.dp)
-        ) {
+        Column(modifier = modifier) {
             Text(
                 label,
                 style = TextStyle(
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Medium,
-                    color = ColorProvider(Color(0xFF9CA3AF))
+                    color = ColorProvider(TxtSec)
                 )
             )
-            Spacer(modifier = GlanceModifier.height(2.dp))
-            Text(
-                value,
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ColorProvider(valueColor)
+            Spacer(modifier = GlanceModifier.height(3.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    value,
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorProvider(valueColor)
+                    )
                 )
-            )
+                if (unit.isNotEmpty()) {
+                    Spacer(modifier = GlanceModifier.width(3.dp))
+                    Text(
+                        unit,
+                        style = TextStyle(
+                            fontSize = 9.sp,
+                            color = ColorProvider(TxtSec)
+                        )
+                    )
+                }
+            }
             Text(
-                sub,
+                goal,
                 style = TextStyle(
                     fontSize = 9.sp,
-                    color = ColorProvider(Color(0xFF6B7280))
+                    color = ColorProvider(TxtSec)
                 )
             )
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.height(5.dp))
             Box(
                 modifier = GlanceModifier
-                    .background(badgeBg)
+                    .background(BgBadge)
                     .padding(horizontal = 5.dp, vertical = 2.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -253,7 +293,7 @@ class HealthWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(badgeFg)
+                        color = ColorProvider(pctColor)
                     )
                 )
             }
@@ -261,36 +301,18 @@ class HealthWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun WorkoutCard(
-        modifier: GlanceModifier,
-        label: String,
-        color: Color
-    ) {
-        Column(
-            modifier = modifier
-                .background(Color.White)
-                .padding(8.dp)
-        ) {
-            Text(
-                "WORKOUT",
-                style = TextStyle(
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = ColorProvider(Color(0xFF9CA3AF))
-                )
-            )
-            Spacer(modifier = GlanceModifier.height(2.dp))
-            Text(
-                label,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ColorProvider(color)
-                )
-            )
-        }
+    private fun VerticalDivider() {
+        Box(
+            modifier = GlanceModifier
+                .width(1.dp)
+                .height(60.dp)
+                .background(Color(0xFF2A2A2A))
+        ) {}
     }
 
-    private fun formatNum(n: Int): String =
+    private fun pct(value: Int, goal: Int) =
+        if (goal > 0) (value * 100 / goal).coerceIn(0, 100) else 0
+
+    private fun fmt(n: Int): String =
         if (n >= 1000) "${n / 1000},${"%03d".format(n % 1000)}" else "$n"
 }

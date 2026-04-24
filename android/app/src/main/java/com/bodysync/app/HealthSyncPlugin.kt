@@ -17,11 +17,15 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.getcapacitor.annotation.Permission
+import androidx.glance.appwidget.updateAll
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @CapacitorPlugin(
   name = "HealthSync",
@@ -36,6 +40,12 @@ class HealthSyncPlugin : Plugin() {
 
   private fun getSharedPrefs() =
     context.getSharedPreferences("com.bodysync.app.health", Context.MODE_PRIVATE)
+
+  private fun refreshWidget() {
+    CoroutineScope(Dispatchers.Main).launch {
+      HealthWidget().updateAll(context)
+    }
+  }
 
   @PluginMethod
   override fun checkPermissions(call: PluginCall) {
@@ -83,6 +93,7 @@ class HealthSyncPlugin : Plugin() {
         .putLong("bodysync_updated_at", System.currentTimeMillis())
         .apply()
 
+      refreshWidget()
       call.resolve()
     } catch (error: Exception) {
       call.reject("Failed to sync water data: ${error.message}", error)
@@ -103,6 +114,7 @@ class HealthSyncPlugin : Plugin() {
         .putLong("bodysync_updated_at", System.currentTimeMillis())
         .apply()
 
+      refreshWidget()
       call.resolve()
     } catch (error: Exception) {
       call.reject("Failed to sync meal data: ${error.message}", error)
@@ -121,6 +133,7 @@ class HealthSyncPlugin : Plugin() {
         .putLong("bodysync_updated_at", System.currentTimeMillis())
         .apply()
 
+      refreshWidget()
       call.resolve()
     } catch (error: Exception) {
       call.reject("Failed to sync workout data: ${error.message}", error)
@@ -139,6 +152,7 @@ class HealthSyncPlugin : Plugin() {
         .putLong("bodysync_updated_at", System.currentTimeMillis())
         .apply()
 
+      refreshWidget()
       call.resolve()
     } catch (error: Exception) {
       call.reject("Failed to sync step data: ${error.message}", error)
