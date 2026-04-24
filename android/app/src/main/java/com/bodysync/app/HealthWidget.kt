@@ -15,7 +15,10 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.background
@@ -58,11 +61,13 @@ class LogWaterCallback : ActionCallback {
             .putLong("bodysync_updated_at", System.currentTimeMillis())
             .putBoolean("bodysync_just_logged", true)
             .apply()
-        HealthWidget().updateAll(context)
 
-        delay(2000)
-        prefs.edit().putBoolean("bodysync_just_logged", false).apply()
-        HealthWidget().updateAll(context)
+        CoroutineScope(Dispatchers.Main).launch {
+            HealthWidget().updateAll(context)
+            delay(2000)
+            prefs.edit().putBoolean("bodysync_just_logged", false).apply()
+            HealthWidget().updateAll(context)
+        }
     }
 }
 
