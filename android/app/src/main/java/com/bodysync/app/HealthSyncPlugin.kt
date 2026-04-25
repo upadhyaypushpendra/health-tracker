@@ -1,5 +1,8 @@
 package com.bodysync.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -12,6 +15,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
+import androidx.core.app.NotificationCompat
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
@@ -139,6 +143,7 @@ class HealthSyncPlugin : Plugin() {
     Log.d("HealthSync", "saveToDownloads: filename=$filename textLen=${text.length} api=${Build.VERSION.SDK_INT}")
     CoroutineScope(Dispatchers.IO).launch {
       try {
+        val fileUri: android.net.Uri
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
           val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, filename)
@@ -153,17 +158,50 @@ class HealthSyncPlugin : Plugin() {
           values.clear()
           values.put(MediaStore.Downloads.IS_PENDING, 0)
           resolver.update(uri, values, null, null)
+          fileUri = uri
         } else {
           val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-          File(dir, filename).writeText(text, Charsets.UTF_8)
+          val file = File(dir, filename)
+          file.writeText(text, Charsets.UTF_8)
+          fileUri = androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", file
+          )
         }
         Log.d("HealthSync", "saveToDownloads: success $filename")
+        postDownloadNotification(filename, fileUri)
         call.resolve()
       } catch (e: Exception) {
         Log.e("HealthSync", "saveToDownloads: failed ${e.message}", e)
         call.reject("saveToDownloads failed: ${e.message}", e)
       }
     }
+  }
+
+  private fun postDownloadNotification(filename: String, fileUri: android.net.Uri) {
+    val channelId = "downloads"
+    val notifManager = context.getSystemService(NotificationManager::class.java)
+    val channel = NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_DEFAULT)
+    notifManager.createNotificationChannel(channel)
+
+    val openIntent = Intent(Intent.ACTION_VIEW).apply {
+      setDataAndType(fileUri, "application/json")
+      flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    val openPI = PendingIntent.getActivity(
+      context, filename.hashCode(), openIntent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val notif = NotificationCompat.Builder(context, channelId)
+      .setSmallIcon(R.drawable.ic_notif_health)
+      .setContentTitle(filename)
+      .setContentText("Download complete — tap to open")
+      .setContentIntent(openPI)
+      .setAutoCancel(true)
+      .build()
+
+    notifManager.notify(filename.hashCode(), notif)
+    Log.d("HealthSync", "saveToDownloads: notification posted for $filename")
   }
 
   // ─── Health Connect ───────────────────────────────────────────────────────
