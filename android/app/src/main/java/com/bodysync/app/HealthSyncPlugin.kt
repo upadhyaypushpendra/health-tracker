@@ -3,6 +3,7 @@ package com.bodysync.app
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.util.Log
 import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
@@ -298,28 +299,40 @@ class HealthSyncPlugin : Plugin() {
 
   @PluginMethod
   fun requestHealthPermissions(call: PluginCall) {
+    Log.d("HealthSync", "requestHealthPermissions: called")
     if (HealthConnectClient.getSdkStatus(context) != HealthConnectClient.SDK_AVAILABLE) {
+      Log.d("HealthSync", "requestHealthPermissions: HC not available, status=${HealthConnectClient.getSdkStatus(context)}")
       call.reject("Health Connect is not available on this device")
       return
     }
     try {
+      Log.d("HealthSync", "requestHealthPermissions: creating intent")
       val intent = hcPermissionContract.createIntent(context, hcPermissions)
+      Log.d("HealthSync", "requestHealthPermissions: calling startActivityForResult")
       startActivityForResult(call, intent, "permissionCallback")
+      Log.d("HealthSync", "requestHealthPermissions: startActivityForResult returned")
     } catch (e: Exception) {
+      Log.e("HealthSync", "requestHealthPermissions: exception ${e.message}", e)
       call.reject("Failed to launch Health Connect: ${e.message}", e)
     }
   }
 
   @ActivityCallback
   private fun permissionCallback(call: PluginCall?, result: ActivityResult) {
-    if (call == null) return
+    Log.d("HealthSync", "permissionCallback: called, resultCode=${result.resultCode}")
+    if (call == null) {
+      Log.e("HealthSync", "permissionCallback: call is null")
+      return
+    }
     CoroutineScope(Dispatchers.IO).launch {
       try {
         val granted = hcClient().permissionController.getGrantedPermissions()
+        Log.d("HealthSync", "permissionCallback: granted=${granted.size} permissions, all=${hcPermissions.all { it in granted }}")
         val res = JSObject()
         res.put("granted", hcPermissions.all { it in granted })
         call.resolve(res)
       } catch (e: Exception) {
+        Log.e("HealthSync", "permissionCallback: exception ${e.message}", e)
         val res = JSObject()
         res.put("granted", false)
         call.resolve(res)
