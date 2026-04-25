@@ -7,6 +7,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
 import android.widget.RemoteViews
@@ -32,15 +34,16 @@ class HealthNotificationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val calories    = intent?.getIntExtra(EXTRA_CALORIES, 0) ?: 0
-        val calorieGoal = intent?.getIntExtra(EXTRA_CALORIE_GOAL, 2000) ?: 2000
-        val waterMl     = intent?.getIntExtra(EXTRA_WATER_ML, 0) ?: 0
-        val waterGoal   = intent?.getIntExtra(EXTRA_WATER_GOAL, 3000) ?: 3000
-        val steps       = intent?.getIntExtra(EXTRA_STEPS, 0) ?: 0
-        val stepGoal    = intent?.getIntExtra(EXTRA_STEP_GOAL, 10000) ?: 10000
+        // When restarted by START_STICKY with a null intent, restore last known values
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val calories    = intent?.getIntExtra(EXTRA_CALORIES,    prefs.getInt("last_calories", 0))    ?: prefs.getInt("last_calories", 0)
+        val calorieGoal = intent?.getIntExtra(EXTRA_CALORIE_GOAL, prefs.getInt("last_calorie_goal", 2000)) ?: prefs.getInt("last_calorie_goal", 2000)
+        val waterMl     = intent?.getIntExtra(EXTRA_WATER_ML,    prefs.getInt("last_water_ml", 0))    ?: prefs.getInt("last_water_ml", 0)
+        val waterGoal   = intent?.getIntExtra(EXTRA_WATER_GOAL,  prefs.getInt("last_water_goal", 3000)) ?: prefs.getInt("last_water_goal", 3000)
+        val steps       = intent?.getIntExtra(EXTRA_STEPS,       prefs.getInt("last_steps", 0))       ?: prefs.getInt("last_steps", 0)
+        val stepGoal    = intent?.getIntExtra(EXTRA_STEP_GOAL,   prefs.getInt("last_step_goal", 10000)) ?: prefs.getInt("last_step_goal", 10000)
 
-        // Persist so AddWaterReceiver can read the latest values
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        prefs.edit()
             .putInt("last_calories", calories)
             .putInt("last_calorie_goal", calorieGoal)
             .putInt("last_water_ml", waterMl)
@@ -62,6 +65,11 @@ class HealthNotificationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun isNightMode(): Boolean {
+        val nightMask = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return nightMask == Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -79,10 +87,27 @@ class HealthNotificationService : Service() {
         waterMl: Int, waterGoal: Int,
         steps: Int, stepGoal: Int
     ): Notification {
+        val nightMode = isNightMode()
+        val primaryColor   = if (nightMode) Color.WHITE else Color.BLACK
+        val secondaryColor = if (nightMode) 0xFFAAAAAA.toInt() else 0xFF555555.toInt()
+        val accentColor    = if (nightMode) 0xFF00FF87.toInt() else 0xFF007A42.toInt()
+
         val views = RemoteViews(packageName, R.layout.notification_health_stats)
+
         views.setTextViewText(R.id.tv_calories, "$calories / $calorieGoal")
+        views.setTextColor(R.id.tv_calories, primaryColor)
+        views.setTextColor(R.id.tv_calories_label, secondaryColor)
+
         views.setTextViewText(R.id.tv_water, formatWater(waterMl) + " / " + formatWater(waterGoal))
+        views.setTextColor(R.id.tv_water, primaryColor)
+        views.setTextColor(R.id.tv_water_label, secondaryColor)
+
         views.setTextViewText(R.id.tv_steps, "$steps / $stepGoal")
+        views.setTextColor(R.id.tv_steps, primaryColor)
+        views.setTextColor(R.id.tv_steps_label, secondaryColor)
+
+        views.setTextColor(R.id.btn_add_water, accentColor)
+        views.setTextColor(R.id.btn_log_meal, accentColor)
 
         val openIntent = packageManager.getLaunchIntentForPackage(packageName)
         val contentPI = PendingIntent.getActivity(
@@ -104,6 +129,10 @@ class HealthNotificationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Buttons embedded in layout — always visible without expanding
+        views.setOnClickPendingIntent(R.id.btn_add_water, addWaterPI)
+        views.setOnClickPendingIntent(R.id.btn_log_meal, logMealPI)
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notif_health)
             .setCustomContentView(views)
@@ -112,8 +141,6 @@ class HealthNotificationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .addAction(R.drawable.ic_water, "Add Water", addWaterPI)
-            .addAction(R.drawable.ic_meals, "Log Meal", logMealPI)
             .build()
     }
 

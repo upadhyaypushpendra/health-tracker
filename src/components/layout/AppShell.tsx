@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { v4 as uuid } from 'uuid'
+import { LocalNotifications } from '@capacitor/local-notifications'
 import BottomNav from './BottomNav'
 import { db, getSettings } from '../../db'
 import { useNotifications } from '../../hooks/useNotifications'
@@ -30,6 +31,13 @@ export default function AppShell() {
     if (settings === undefined) return
 
     async function init() {
+      // Request POST_NOTIFICATIONS permission (Android 13+) before starting the service.
+      // Without it, startForeground() silently fails and Android kills the service.
+      const permStatus = await LocalNotifications.checkPermissions()
+      if (permStatus.display === 'prompt' || permStatus.display === 'prompt-with-rationale') {
+        await LocalNotifications.requestPermissions()
+      }
+
       // Reconcile water added from the notification while the app was killed
       const pendingMl = await healthSync.getPendingWaterAdd()
       if (pendingMl > 0) {
