@@ -78,6 +78,7 @@ class HealthNotificationService : Service() {
         ).apply {
             description = "Live health stats notification"
             setShowBadge(false)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
