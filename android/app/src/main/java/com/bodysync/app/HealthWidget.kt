@@ -38,7 +38,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private val BgMain  = Color(0xFF0D0D0D)
-private val BgBadge = Color(0xFF262626)
 private val TxtPri  = Color(0xFFFFFFFF)
 private val Divider = Color(0xFF2A2A2A)
 
@@ -98,7 +97,6 @@ class HealthWidget : GlanceAppWidget() {
             Content(
                 waterToday    = stats.waterMl,
                 waterGoal     = stats.waterGoalMl,
-                mealCount     = stats.mealCount,
                 calories      = stats.caloriesKcal,
                 calorieGoal   = stats.calorieGoal,
                 workoutExists = stats.workoutExists,
@@ -112,14 +110,10 @@ class HealthWidget : GlanceAppWidget() {
     @Composable
     private fun Content(
         waterToday: Int, waterGoal: Int,
-        mealCount: Int, calories: Int, calorieGoal: Int,
+        calories: Int, calorieGoal: Int,
         workoutExists: Boolean, workoutDone: Boolean,
         steps: Int, stepGoal: Int
     ) {
-        val waterPct   = pct(waterToday, waterGoal)
-        val caloriePct = pct(calories, calorieGoal)
-        val stepPct    = pct(steps, stepGoal)
-
         val workoutLabel = when {
             workoutDone   -> "Done ✓"
             workoutExists -> "Planned"
@@ -182,7 +176,6 @@ class HealthWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_water,
                         label    = "${fmt(waterToday)}/${fmt(waterGoal)} ml",
-                        pct      = "$waterPct%",
                         color    = ColWater
                     )
                     VSeparator()
@@ -190,7 +183,6 @@ class HealthWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_steps,
                         label    = "${fmt(steps)}/${fmt(stepGoal)}",
-                        pct      = "$stepPct%",
                         color    = ColSteps
                     )
                 }
@@ -203,7 +195,6 @@ class HealthWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_meals,
                         label    = "${fmt(calories)}/${fmt(calorieGoal)} kcal",
-                        pct      = "$caloriePct%",
                         color    = ColMeals
                     )
                     VSeparator()
@@ -211,7 +202,6 @@ class HealthWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.defaultWeight(),
                         iconRes  = R.drawable.ic_workout,
                         label    = workoutLabel,
-                        pct      = "$mealCount meals",
                         color    = workoutColor
                     )
                 }
@@ -274,7 +264,6 @@ class HealthWidget : GlanceAppWidget() {
         modifier: GlanceModifier,
         iconRes: Int,
         label: String,
-        pct: String,
         color: Color
     ) {
         Row(
@@ -295,22 +284,6 @@ class HealthWidget : GlanceAppWidget() {
                     color = ColorProvider(color)
                 )
             )
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Box(
-                modifier = GlanceModifier
-                    .background(BgBadge)
-                    .padding(horizontal = 5.dp, vertical = 2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    pct,
-                    style = TextStyle(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorProvider(color)
-                    )
-                )
-            }
         }
     }
 

@@ -148,18 +148,18 @@ function HealthWidgetPreview() {
       <div>
         {/* Row 1: Water | Steps */}
         <div className="flex items-center">
-          <Section icon={<Droplets size={13} className="text-blue-400" />} label="1,200/3,000 ml" pct="40%" color="text-blue-400" />
+          <Section icon={<Droplets size={13} className="text-blue-400" />} label="1,200/3,000 ml" color="text-blue-400" />
           <div className="w-px self-stretch bg-[#2A2A2A]" />
-          <Section icon={<Footprints size={13} className="text-purple-400" />} label="4,230/10,000" pct="42%" color="text-purple-400" />
+          <Section icon={<Footprints size={13} className="text-purple-400" />} label="4,230/10,000" color="text-purple-400" />
         </div>
 
         <div className="h-px bg-[#2A2A2A]" />
 
         {/* Row 2: Meals | Workout */}
         <div className="flex items-center">
-          <Section icon={<Utensils size={13} className="text-orange-400" />} label="1,450/2,000 kcal" pct="73%" color="text-orange-400" />
+          <Section icon={<Utensils size={13} className="text-orange-400" />} label="1,450/2,000 kcal" color="text-orange-400" />
           <div className="w-px self-stretch bg-[#2A2A2A]" />
-          <Section icon={<Dumbbell size={13} className="text-green-400" />} label="Done ✓" pct="3 meals" color="text-green-400" />
+          <Section icon={<Dumbbell size={13} className="text-green-400" />} label="Done ✓" color="text-green-400" />
         </div>
       </div>
 
@@ -177,17 +177,14 @@ function HealthWidgetPreview() {
 }
 
   function Section({
-  icon, label, pct, color,
+  icon, label, color,
 }: {
-  icon: React.ReactNode; label: string; pct: string; color: string
+  icon: React.ReactNode; label: string; color: string
 }) {
   return (
     <div className="flex-1 flex items-center gap-1.5 px-2 py-2">
       <span className="shrink-0">{icon}</span>
       <p className={`flex-1 text-[9px] font-medium leading-tight ${color} min-w-0 truncate`}>{label}</p>
-      <div className="bg-[#262626] rounded px-1 py-0.5 shrink-0">
-        <p className={`text-[8px] font-bold ${color}`}>{pct}</p>
-      </div>
     </div>
   )
 }
