@@ -14,6 +14,7 @@ import { useTodayWater } from '../hooks/useTodayWater'
 import { formatWater } from '../utils/calculations'
 import { healthSync } from '../services/healthSyncPlugin'
 import { syncNotificationStats } from '../services/notificationStats'
+import { rescheduleWaterReminders } from '../hooks/useNotifications'
 import type { MealLog } from '../db/types'
 
 export default function Nutrition() {
@@ -42,6 +43,7 @@ export default function Nutrition() {
       await db.waterLogs.update(waterLog.id, { entries: newEntries })
     }
     syncNotificationStats()
+    rescheduleWaterReminders()
   }
 
   return (

@@ -6,6 +6,7 @@ import { useTodayWater } from './useTodayWater'
 import { getTodayString } from '../utils/dateHelpers'
 import { healthSync } from '../services/healthSyncPlugin'
 import { syncNotificationStats } from '../services/notificationStats'
+import { rescheduleWaterReminders } from './useNotifications'
 
 /**
  * Returns an `addWater(amount)` callback that creates or updates
@@ -35,6 +36,7 @@ export function useAddWater() {
     // Sync to Health Connect
     healthSync.writeHydrationRecord(entry.amount, entry.time)
     syncNotificationStats()
+    rescheduleWaterReminders()
   }
 
   return addWater
