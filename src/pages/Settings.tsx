@@ -139,6 +139,15 @@ export default function Settings() {
     await initReminders()
   }
 
+  const handleExport = async () => {
+    try {
+      await exportData()
+    } catch (e) {
+      setImportStatus(`Error: ${e instanceof Error ? e.message : 'Export failed'}`)
+      setTimeout(() => setImportStatus(null), 4000)
+    }
+  }
+
   const handleImport = () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -359,7 +368,7 @@ export default function Settings() {
           <div className="space-y-2">
             <Card border padding="sm">
               <div className="flex gap-3">
-                <Button fullWidth variant="outline" size="sm" icon={<Download size={14} />} onClick={exportData}>
+                <Button fullWidth variant="outline" size="sm" icon={<Download size={14} />} onClick={handleExport}>
                   Export Backup
                 </Button>
                 <Button fullWidth variant="outline" size="sm" icon={<Upload size={14} />} onClick={handleImport}>
