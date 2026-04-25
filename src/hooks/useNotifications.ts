@@ -13,15 +13,11 @@ const WORKOUT_ID_BASE = 3000 // 3000–3006 (one per day, 7-day lookahead)
 // Call this whenever intake changes or the app comes to foreground.
 
 export async function rescheduleWaterReminders(): Promise<void> {
-  // Cancel by range AND any legacy notifications (e.g. from older versions with different IDs)
+  // Cancel ALL pending notifications to clear any legacy IDs from older builds
   const pending = await LocalNotifications.getPending()
-  const toCancel = [
-    ...pending.notifications
-      .filter(n => n.id >= WATER_ID_BASE && n.id < WATER_ID_BASE + 100)
-      .map(n => ({ id: n.id })),
-    ...Array.from({ length: 100 }, (_, i) => ({ id: WATER_ID_BASE + i })),
-  ]
-  await LocalNotifications.cancel({ notifications: toCancel })
+  if (pending.notifications.length > 0) {
+    await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) })
+  }
 
   const settings = await getSettings()
   if (!settings.notificationsEnabled) return
@@ -156,9 +152,10 @@ export function useNotifications() {
   }, [])
 
   const stopAllReminders = useCallback(async () => {
-    const waterIds = Array.from({ length: 100 }, (_, i) => ({ id: WATER_ID_BASE + i }))
-    const workoutIds = Array.from({ length: 7 }, (_, i) => ({ id: WORKOUT_ID_BASE + i }))
-    await LocalNotifications.cancel({ notifications: [...waterIds, ...workoutIds] })
+    const pending = await LocalNotifications.getPending()
+    if (pending.notifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) })
+    }
   }, [])
 
   return {
